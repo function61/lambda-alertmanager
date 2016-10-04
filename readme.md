@@ -10,7 +10,7 @@ Features:
 - Costs practically nothing to run
 - Supports `http` and `https` checks
 - Runs multiple checks in parallel - it is super fast
-- Modular architecture. Plugs into [Prometheus](https://prometheus.io/)-compatible alert API.
+- Modular architecture. Plugs into [Prometheus](https://prometheus.io/docs/alerting/clients/)-compatible alert API.
 - Lambda-canary therefore does not deliver alerts - only invokes the alerting process of another system.
 - Tries to minimize false positives by retrying one time
 
