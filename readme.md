@@ -1,3 +1,8 @@
+NOT PRODUCTION READY
+====================
+
+Disclaimer: work-in-progress. Not ready for general use.
+
 lambda-canary
 =============
 
