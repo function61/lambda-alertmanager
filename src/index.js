@@ -3,12 +3,29 @@ var https = require('https')
 
 var webCheckTimeoutMs = 8000;
 
-var webChecks = [
-	{
-		url: 'http://example.com/',
-		findString: 'string to find'
+var webChecks = [];
+
+/*
+	HOME: /root
+	PWD: /app
+	CHECK1: {"url":"https://example.com/"§"find":"Welcome to Example Ltd"}
+	CHECK2: {"url":"http://blog.example.com/"§"find":"Welcome to our blog"}
+
+	=> webChecks = [ { url: 'https://example.com/', find: 'Welcome to Example Ltd' }, { url: 'http://blog.example.com/', find: 'Welcome to our blog' } ]
+*/
+for (var key in process.env) {
+	if (/^CHECK[0-9]+$/.test(key)) {
+		/*	why § in JSON instead of ","? Well, apparently the geniuses at AWS decided to ship support for ENV variables
+			with only not-supported character being "," (ENV variables probably serialized by "," at some subsystem - lazy programming?),
+			effectively denying JSON and any list of values: https://forums.aws.amazon.com/thread.jspa?messageID=753580
+
+			With comma we get this error: Member must satisfy regular expression pattern: [^,]*
+		*/
+		var awsLimitationStupidityDecoded = process.env[key].replace(/§/g, ',');
+
+		webChecks.push(JSON.parse(awsLimitationStupidityDecoded));
 	}
-];
+}
 
 function checkWebProperty(checkDefinition, failOrSucceed) {
 	var webClient = utils.getHttpOrHttpsWebClient(checkDefinition.url);
@@ -37,8 +54,8 @@ function checkWebProperty(checkDefinition, failOrSucceed) {
 
             var duration = new Date().getTime() - started;
 
-			if (buffer.indexOf(checkDefinition.findString) === -1) {
-				err = new Error('findString="' + checkDefinition.findString + '" NOT in body: ' + buffer);
+			if (buffer.indexOf(checkDefinition.find) === -1) {
+				err = new Error('find="' + checkDefinition.find + '" NOT in body: ' + buffer);
 			}
 
 			clearTimeout(timeout);
@@ -95,8 +112,8 @@ function postAlert(alertBody, next) {
 }
 
 function checkOne(checkDefinition, next) {
-	if (!checkDefinition.url || !checkDefinition.findString) {
-		throw new Error('url or findString not defined');
+	if (!checkDefinition.url || !checkDefinition.find) {
+		throw new Error('url or find not defined');
 	}
 
 	var resolved = false;
