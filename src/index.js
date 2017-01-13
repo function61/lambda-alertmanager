@@ -87,14 +87,17 @@ function checkWebProperty(checkDefinition, failOrSucceed) {
 	}, webCheckTimeoutMs);
 }
 
-function postAlert(alertBody, next) {
+// alert = { subject: ..., details: ... }
+function postAlert(alert, next) {
+	var alertJsonBody = JSON.stringify(alert);
+
 	var request = https.request({
 			hostname: 'b4eac0iqek.execute-api.us-east-1.amazonaws.com',
 			method: 'POST',
 			path: '/prod/ingest',
 			headers: {
 				'Content-Type': 'application/json',
-				'Content-Length': Buffer.byteLength(alertBody)
+				'Content-Length': Buffer.byteLength(alertJsonBody)
 			},
 		}, function (response){
 		response.on('error', next);
@@ -108,7 +111,7 @@ function postAlert(alertBody, next) {
 	});
 
 	request.on('error', next);
-	request.end(alertBody);
+	request.end(alertJsonBody);
 }
 
 function checkOne(checkDefinition, next) {
@@ -130,13 +133,14 @@ function checkOne(checkDefinition, next) {
 		console.log((err ? '✗ ' : '✓ ') + checkDefinition.url + suffix);
 
 		if (err) {
-			var alertBody = JSON.stringify({
-				subject: checkDefinition.url,
-				details: err.message
-			});
+            postAlert({ subject: checkDefinition.url, details: err.message }, function (alertPostErr){
+            	if (alertPostErr) { // alert posting failed - not much we can do :(
+            		next(alertPostErr); // TODO: wrap error with text that makes super clear what happened
+            		return;
+            	}
 
-            postAlert(alertBody, function (alertPostErr){
-                next(alertPostErr || err);
+            	// alert posting succeeded (but actual check still failed)
+            	next(err);
             });
 		}
 		else {
