@@ -57,7 +57,7 @@ Follow these steps precisely, and you've got yourself a working installation:
 2. [Set up DynamoDB](docs/setup_dynamodb.md)
 3. [Set up IAM](docs/setup_iam.md)
 4. [Set up AlertManager](docs/setup_alertmanager.md)
-5. [Set up API Gateway](docs/setup_apigwateway.md) (also includes: testing that this works)
+5. [Set up API Gateway](docs/setup_apigateway.md) (also includes: testing that this works)
 6. (recommended) [Set up AlertManager-canary](docs/setup_alertmanager-canary.md)
 7. (optional) Set up Prometheus integration
 8. (optional) Set up custom integration
