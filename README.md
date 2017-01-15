@@ -10,7 +10,7 @@ lambda-alertmanager?
   CloudWatch Events (for scheduling) and SNS (inbound alarm receiving, outbound alert delivery).
 - Acknowledge -model: each separate alarm is alerted only once until it is acknowledged from UI,
   even if the same alarm is submitted again. F.ex. Prometheus sends the same alert continuously
-  until the issue is resolved, but of course you want to receive the alert only once).
+  until the issue is resolved, but of course you want to receive the alert only once.
 - Rate limiting: if shit hits the fan and your hundreds of alarms trigger at once, you only get alerts
   for the first, say, 10 alarms. The rate limit is configurable.
 
@@ -45,6 +45,12 @@ Integrates with:
 - Supports receiving alerts over https as JSON.
 
 
+Docs
+----
+
+- [docs/installation.md](docs/installation.md)
+
+
 Diagram
 -------
 
@@ -55,7 +61,7 @@ Diagram
   	cloudwatch_alarms [label="Cloudwatch Alarms"];
   	alertmanager_canary [label="HTTP(S) monitoring%5CnLambda: AlertManager Canary"];
   	sns_ingest [label="SNS topic:%5CnAlertManager-ingest"];
-  	http [label="HTTPS%5Cn- API gateway"];
+  	http [label="HTTPS%5Cn- POST /alerts/ingest%5Cn- API gateway"];
   	receive_alarm [label="Receive alarm%5CnLambda: AlertManager"];
   	alarm_already_triggering [label="Alarm already triggering?"];
   	Discard;
