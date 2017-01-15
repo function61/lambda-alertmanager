@@ -1,7 +1,8 @@
 Setup IAM
 =========
 
-"IAM" takes care of access management.
+"IAM" takes care of access management. For security we'll restrict AlertManager's access to
+the bare minimum it needs to operate under.
 
 
 Create role

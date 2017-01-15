@@ -1,6 +1,13 @@
 Setting up DynamoDB
 ===================
 
+DynamoDB holds all the state that AlertManager keeps. The state is required to implement:
+
+- Acknowledgements: mark an alert as having been handled.
+- Alarm suppression: if alert is not yet acknowledged as handled, the same alert should not be sent twice.
+- Rate limiting: if too many alarms are triggering, do not overwhelm operations' inboxes & phone with alerts.
+
+
 Create table
 ------------
 

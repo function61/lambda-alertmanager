@@ -30,7 +30,7 @@ Advanced config:
 - Memory (MB): leave as is (`128`)
 - Timeout: `1 min`
 
-Okay now hit `Create function`.
+Okay now hit `[ Create function ]`.
 
 
 Add trigger for "alertmanager_alerts" DynamoDB table

@@ -1,11 +1,14 @@
 Setting up AlertManager-Canary
 ==============================
 
+Canary pokes at your web properties over http/https to see if they are online. If they are not, an alarm will be raised.
+
+
 Create the Lambda function
 --------------------------
 
 - Go to `Lambda > Create a Lambda function > Blank function`.
-- Name: `AlertManager-canary`
+- Name: `AlertManager-Canary`
 - Description: `Checks that important web properties are working.`
 - Runtime: `Node.js 4.3` (or higher)
 - Code entry type: `Upload a .ZIP file`
@@ -18,7 +21,11 @@ Now, for each property that you want to monitor, add those checks as separate EN
 - `CHECK1` = `{"url":"https://example.com/"§"find":"This domain is established to be used for illustrative examples in documents."}`
 - `INGEST_TOPIC` = `arn:aws:sns:us-west-2:426466625513:AlertManager-ingest` (replace your region and customer ID)
 
-(there can be gaps in the check numbers, the numbers only have to be unique - luckily Lambda checks this)
+(NOTE: `,` chars in `CHECK...` JSON are replaced with `§` because the geniuses that implemented ENV variables
+in Lambda probably serialize the ENV list as a `,`-separated string because currently
+[ENV var values cannot contain `,`](https://forums.aws.amazon.com/thread.jspa?messageID=753580))
+
+(NOTE: there can be gaps in the check numbers, the numbers only have to be unique - luckily Lambda checks this)
 
 Role config:
 
