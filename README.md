@@ -11,7 +11,7 @@ lambda-alertmanager?
 - Acknowledge -model: each separate alarm is alerted only once until it is acknowledged from UI,
   even if the same alarm is submitted again. F.ex. Prometheus sends the same alert continuously
   until the issue is resolved, but of course you want to receive the alert only once.
-- Rate limiting: if shit hits the fan and your hundreds of alarms trigger at once, you only get alerts
+- Rate limiting: if shit hits the fan and your hundreds of alarms trigger all at once, you only get alerts
   for the first, say, 10 alarms. The rate limit is configurable.
 
 
@@ -30,7 +30,7 @@ Can directly monitor:
 ---------------------
 
 - http/https checks via AlertManager-Canary component (included but optional):
-  checks that your web properties are up and triggering an alert if not. Can even check all your properties
+  checks that your web properties are up - triggers an alert if not. Can even check all your properties
   at 1 minute intervals, and runs efficiently because all the checks are executed in parallel. Tries to minimize
   false positives by retrying each failed check once before generating an alarm.
 
@@ -45,10 +45,22 @@ Integrates with:
 - Supports receiving alerts over https as JSON.
 
 
-Docs
-----
+How to install & other docs
+---------------------------
 
-- [docs/installation.md](docs/installation.md)
+Take note of your AWS region. These docs assume you are in the `us-west-2` region.
+If not, substitute your region code everywhere in these docs!
+
+Follow these steps precisely, and you've got yourself a working installation:
+
+1. [Set up SNS topics](docs/setup_sns.md)
+2. [Set up DynamoDB](docs/setup_dynamodb.md)
+3. [Set up IAM](docs/setup_iam.md)
+4. [Set up AlertManager](docs/setup_alertmanager.md)
+5. [Set up API Gateway](docs/setup_apigwateway.md) (also includes: testing that this works)
+6. (recommended) [Set up AlertManager-canary](docs/setup_alertmanager-canary.md)
+7. (optional) Set up Prometheus integration
+8. (optional) Set up custom integration
 
 
 Diagram
@@ -61,7 +73,7 @@ Diagram
   	cloudwatch_alarms [label="Cloudwatch Alarms"];
   	alertmanager_canary [label="HTTP(S) monitoring%5CnLambda: AlertManager Canary"];
   	sns_ingest [label="SNS topic:%5CnAlertManager-ingest"];
-  	http [label="HTTPS%5Cn- POST /alerts/ingest%5Cn- API gateway"];
+  	http [label="HTTPS (API Gateway)%5Cn- POST /alerts/ingest"];
   	receive_alarm [label="Receive alarm%5CnLambda: AlertManager"];
   	alarm_already_triggering [label="Alarm already triggering?"];
   	Discard;
