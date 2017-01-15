@@ -1,5 +1,14 @@
 var https = require('https')
+  , AWS = require('aws-sdk')
   , utils = require('./utils');
+
+var sns = new AWS.SNS();
+
+var INGEST_TOPIC = process.env.INGEST_TOPIC;
+
+if (!INGEST_TOPIC) {
+	throw new Error("INGEST_TOPIC not defined");
+}
 
 var webCheckTimeoutMs = 8000;
 
@@ -89,29 +98,11 @@ function checkWebProperty(checkDefinition, failOrSucceed) {
 
 // alert = { subject: ..., details: ... }
 function postAlert(alert, next) {
-	var alertJsonBody = JSON.stringify(alert);
-
-	var request = https.request({
-			hostname: 'b4eac0iqek.execute-api.us-east-1.amazonaws.com',
-			method: 'POST',
-			path: '/prod/ingest',
-			headers: {
-				'Content-Type': 'application/json',
-				'Content-Length': Buffer.byteLength(alertJsonBody)
-			},
-		}, function (response){
-		response.on('error', next);
-		response.on('data', function (chunk){
-			console.log('Alert ingestor response: ' + chunk.toString());
-		});
-
-		response.on('end', function(){
-			next(null);
-		});
-	});
-
-	request.on('error', next);
-	request.end(alertJsonBody);
+	sns.publish({
+		Message: alert.details,
+		Subject: alert.subject,
+		TopicArn: INGEST_TOPIC
+	}, next);
 }
 
 function checkOne(checkDefinition, next) {
@@ -135,6 +126,7 @@ function checkOne(checkDefinition, next) {
 		if (err) {
             postAlert({ subject: checkDefinition.url, details: err.message }, function (alertPostErr){
             	if (alertPostErr) { // alert posting failed - not much we can do :(
+            		console.log('ALERT POSTING ERROR', alertPostErr);
             		next(alertPostErr); // TODO: wrap error with text that makes super clear what happened
             		return;
             	}
@@ -144,7 +136,7 @@ function checkOne(checkDefinition, next) {
             });
 		}
 		else {
-			next(err);
+			next(null);
 		}
 	}
 
@@ -154,7 +146,7 @@ function checkOne(checkDefinition, next) {
 			checkWebProperty(checkDefinition, failOrSucceed);
 		}
 		else {
-			failOrSucceed(err, duration);
+			failOrSucceed(null, duration);
 		}
 	});
 }
