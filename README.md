@@ -3,8 +3,8 @@ lambda-alertmanager?
 
 - Provides simple & reliable alerting for your infrastructure.
 - Uses so little resources that it is practically free to run.
-- Monitors your web properties for being up, receive alerts from Prometheus, Amazon CloudWatch alarms, alarms via SNS topic
-  or any custom HTTP integration (as JSON).
+- [Monitors your web properties for being up](usecase_http-monitoring.md), receive alerts from Prometheus,
+  Amazon CloudWatch alarms, alarms via SNS topic or any custom HTTP integration (as JSON).
 - Runs **entirely** on AWS' reliable infrastructure (after setup nothing for you to manage or fix). The compute part is Lambda,
   but we also use DynamoDB + streams (for state), IAM (for sandboxing AlertManager), API Gateway (for inbound https integrations),
   CloudWatch Events (for scheduling) and SNS (inbound alarm receiving, outbound alert delivery).
@@ -110,7 +110,7 @@ Q: Why use this, [uptimerobot.com](https://uptimerobot.com/) is free?
 A: uptimerobot.com is awesome, but:
 
 - It only supports 5 minute rates while lambda-alertmanager supports 1 minute rates.
-- It does mainly HTTP/HTTPS checks, while lambda-alertmanager integrates with Prometheus as well
+- It does mainly HTTP/HTTPS checks, while lambda-alertmanager integrates with Prometheus, Amazon CloudWatch & others as well.
 - It supports free SMS messages (no delivery guarantees), but they have non-free "pro SMS" (better delivery).
   lambda-alertmanager SMSes are all "pro SMS" and free to a certain limit.
 - lambda-alertmanager is simple, free, open source, runs "on premises" (in your AWS account) and should run forever
