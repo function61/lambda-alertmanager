@@ -12,14 +12,14 @@ Create the Lambda function
 - Description: `Checks that important web properties are working.`
 - Runtime: `Node.js 4.3` (or higher)
 - Code entry type: `Upload a .ZIP file`
-- Download this to your desktop and then upload to Lambda: TODO
-- FIXME_REMOVE: S3 link URL: `https://s3.amazonaws.com/files.function61.com/alertmanager-canary/alertmanager-canary-2017-01-14.zip`
-- Enable encryption helpers: leave unchecked
+- Download
+  [alertmanager-canary-2017-01-16.zip](https://s3.amazonaws.com/files.function61.com/alertmanager/alertmanager-canary-2017-01-16.zip)
+  to your desktop and then upload to Lambda
 
 Now, for each property that you want to monitor, add those checks as separate ENV variables. Example:
 
 - `CHECK1` = `{"url":"https://example.com/"§"find":"This domain is established to be used for illustrative examples in documents."}`
-- `INGEST_TOPIC` = `arn:aws:sns:us-west-2:426466625513:AlertManager-ingest` (replace your region and customer ID)
+- `INGEST_TOPIC` = ARN of your ingest topic (mine looked like `arn:aws:sns:us-west-2:426466625513:AlertManager-ingest`)
 
 (NOTE: `,` chars in `CHECK...` JSON are replaced with `§` because the geniuses that implemented ENV variables
 in Lambda probably serialize the ENV list as a `,`-separated string because currently

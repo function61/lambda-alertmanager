@@ -12,6 +12,8 @@ In `SNS > Topics > Create new topic`:
 - Topic name = `AlertManager-ingest`
 - Display name = (leave blank)
 
+Write the `Topic ARN` down - you'll need this when setting up Lambda.
+
 
 Create topic "AlertManager-alert"
 ---------------------------------
@@ -20,6 +22,8 @@ In `SNS > Topics > Create new topic`:
 
 - Topic name = `AlertManager-alert`
 - Display name = `ALERT` (this is shown in SMS message prefix etc.)
+
+Write the `Topic ARN` down (for this topic as well) - you'll need this when setting up Lambda.
 
 
 Add first subscriber to alert topic

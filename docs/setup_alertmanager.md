@@ -10,14 +10,13 @@ Create Lambda function
 - Name: `AlertManager`
 - Description: `AlertManager main: ingestor & alerter`
 - Runtime: `Node.js 4.3`
-- FIXME Code entry type: `Upload a file from Amazon S3`
-- FIXME S3 link URL: `https://s3.amazonaws.com/files.function61.com/lambda-canary/2017-01-13.zip`
-- Paste code from `ingestor/index.js`
-- Enable encryption helpers: leave unchecked
+- Download
+  [alertmanager-2017-01-16.zip](https://s3.amazonaws.com/files.function61.com/alertmanager/alertmanager-2017-01-16.zip)
+  to your desktop and then upload to Lambda
 
 Env variables:
 
-- `ALERT_TOPIC` = `arn:aws:sns:__REGION__:__AWS_ACCOUNT_ID__:AlertManager-alert` (replace `__AWS_ACCOUNT_ID__` with your ID and `__REGION__` with your region)
+- `ALERT_TOPIC` = ARN of your alert topic (mine looked like `arn:aws:sns:us-west-2:426466625513:AlertManager-alert`)
 
 Role config:
 
