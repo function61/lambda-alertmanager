@@ -15,10 +15,10 @@ So, if Canary fails to find this text from the page:
 Hostname: c70e24a08b3a
 ```
 
-It'll send an alert (to configurable receivers), for example by SMS:
-
-![](usecase_http-monitoring-sms.png)
-
-And email:
+It'll send an alert (to configurable receivers), for example by email:
 
 ![](usecase_http-monitoring-email.png)
+
+And SMS:
+
+![](usecase_http-monitoring-sms.png)

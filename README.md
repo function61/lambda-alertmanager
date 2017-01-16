@@ -3,7 +3,7 @@ lambda-alertmanager?
 
 - Provides simple & reliable alerting for your infrastructure.
 - Uses so little resources that it is practically free to run.
-- [Monitors your web properties for being up](usecase_http-monitoring.md), receive alerts from Prometheus,
+- [Monitors your web properties for being up](docs/usecase_http-monitoring.md), receive alerts from Prometheus,
   Amazon CloudWatch alarms, alarms via SNS topic or any custom HTTP integration (as JSON).
 - Runs **entirely** on AWS' reliable infrastructure (after setup nothing for you to manage or fix). The compute part is Lambda,
   but we also use DynamoDB + streams (for state), IAM (for sandboxing AlertManager), API Gateway (for inbound https integrations),
