@@ -35,6 +35,8 @@ $ curl -H 'Content-Type: application/json' -X POST -d '{"subject": "www.example.
 
 Or if the alert is already firing, you'll get back response `This alert is already firing. Discarding the submitted alert.`.
 
+Alternate way: if you app uses AWS-SDK, you can also submit the alarm for ingestion by posting to the `AlertManager-ingest` SNS topic.
+
 
 Acknowledge an alert
 --------------------
