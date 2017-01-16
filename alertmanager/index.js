@@ -12,11 +12,16 @@ var sns = new AWS.SNS();
 
 var dynamodb = new AWS.DynamoDB();
 
-function flatten(kv) {
+// DynamoDB records are typed by this horrible convention:
+//     { "name": { S: "a string value" }, "age": { N: "123" }  }
+// that actually means
+//     { "name": "a string value", "age": 123 }
+// read more @ https://www.npmjs.com/package/dynamodb-data-types
+function unwrapDynamoDBTypedObject(kv) {
 	var ret = {};
 	
 	if (typeof (kv) !== 'object') {
-		throw new Error('Can only flatten key-value objects');
+		throw new Error('Can only unwrapDynamoDBTypedObject key-value objects');
 	}
 
 	for (var key in kv) {
@@ -44,6 +49,8 @@ function httpSucceedAndLog(context, succeedResult) {
 function failAndLog(context, failResult) {
 	console.log(failResult);
 	context.fail(failResult);
+	// TODO: do we have to respond to failures with the HTTP statusCode
+	//       wrapper when using Lambda-proxy in ApiGateway?
 	/*
 	context.fail({
 		statusCode: 500,
@@ -64,10 +71,10 @@ var apis = {
 				return;
 			}
 
-			// httpSucceedAndLog(context, data.Items.map(flatten));
+			// httpSucceedAndLog(context, data.Items.map(unwrapDynamoDBTypedObject));
 			context.succeed({
 				statusCode: 200,
-				body: JSON.stringify(data.Items.map(flatten))
+				body: JSON.stringify(data.Items.map(unwrapDynamoDBTypedObject))
 			});
 		});
 	},
@@ -118,7 +125,7 @@ var apis = {
 					return;
 				}
 
-				var items = data.Items.map(flatten);
+				var items = data.Items.map(unwrapDynamoDBTypedObject);
 
 				var largestNumber = 0;
 
@@ -202,7 +209,7 @@ var apis = {
 	},
 
 	'DynamoDB: alertmanager_alerts': function (event, context) {
-		if (event.Records.length !== 1) { // should not happen, as trigger config: BatchSize=0
+		if (event.Records.length !== 1) { // should not happen, as trigger config: BatchSize=1
 			failAndLog(context, new Error("Record count must be 1"));
 			return;
 		}
@@ -212,7 +219,7 @@ var apis = {
 			return;
 		}
 
-		var record = flatten(event.Records[0].dynamodb.NewImage);
+		var record = unwrapDynamoDBTypedObject(event.Records[0].dynamodb.NewImage);
 
 		sns.publish({
 			Message: record.subject + "\n\n" + record.details,
