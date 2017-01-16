@@ -38,7 +38,7 @@ Content will be below, but you should copy it to a text editor first, and replac
                 "dynamodb:Scan"
             ],
             "Resource": [
-                "arn:aws:dynamodb:*:__ACCOUNT_ID__:table/alertmanager_alerts"
+                "arn:aws:dynamodb:*:*:table/alertmanager_alerts"
             ]
     	},
     	{
@@ -51,7 +51,7 @@ Content will be below, but you should copy it to a text editor first, and replac
 	            "dynamodb:ListStreams"
             ],
             "Resource": [
-                "arn:aws:dynamodb:*:__ACCOUNT_ID__:table/alertmanager_alerts/stream/*"
+                "arn:aws:dynamodb:*:*:table/alertmanager_alerts/stream/*"
             ]
     	},
         {
@@ -61,8 +61,8 @@ Content will be below, but you should copy it to a text editor first, and replac
                 "sns:Publish"
             ],
             "Resource": [
-                "arn:aws:sns:*:__ACCOUNT_ID__:AlertManager-alert",
-                "arn:aws:sns:*:__ACCOUNT_ID__:AlertManager-ingest"
+                "arn:aws:sns:*:*:AlertManager-alert",
+                "arn:aws:sns:*:*:AlertManager-ingest"
             ]
         },
         {
@@ -78,3 +78,17 @@ Content will be below, but you should copy it to a text editor first, and replac
     ]
 }
 ```
+
+Are the wildcards safe?
+-----------------------
+
+Yes. I used wildcards so you can just copy-paste the policy from above without needing to do region and
+account id replacements (the `*:*` parts). It is acceptable to have wildcards for:
+
+- Region component: gives additional access only to table with same name (alertmanager_alerts)
+  in other regions (you won't have same table name in other regions) or SNS topics with same
+  names in other regions (you won't have same topic names in other regions).
+- Account id component: gives AlertManager additional access to resources in other accounts you have access to: **none**,
+  as how could you give yourself access to other accounts' resources?
+
+If you're unsure of this in any capacity, feel free to plug in your region and account IDs in the resource constraints.
