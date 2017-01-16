@@ -100,3 +100,20 @@ Diagram
   	sns_alert -> sns_sms;
   }
 )
+
+
+FAQ
+---
+
+Q: Why use this, [uptimerobot.com](https://uptimerobot.com/) is free?
+
+A: uptimerobot.com is awesome, but:
+
+- It only supports 5 minute rates while lambda-alertmanager supports 1 minute rates.
+- It does mainly HTTP/HTTPS checks, while lambda-alertmanager integrates with Prometheus as well
+- It supports free SMS messages (no delivery guarantees), but they have non-free "pro SMS" (better delivery).
+  lambda-alertmanager SMSes are all "pro SMS" and free to a certain limit.
+- lambda-alertmanager is simple, free, open source, runs "on premises" (in your AWS account) and should run forever
+  (AWS is not going anywhere).
+- That being said, lambda-alertmanager is not "dead simple" to set up and you need an AWS account. If your use
+  case does not require lambda-alertmanager, you should probably choose uptimerobot. :)
