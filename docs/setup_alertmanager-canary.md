@@ -8,6 +8,7 @@ Create the Lambda function
 --------------------------
 
 - Go to `Lambda > Create a Lambda function > Blank function`.
+- Do not configure any triggers at this time (just hit next).
 - Name: `AlertManager-Canary`
 - Description: `Checks that important web properties are working.`
 - Runtime: `Node.js 4.3` (or higher)
@@ -29,7 +30,7 @@ in Lambda probably serialize the ENV list as a `,`-separated string because curr
 
 Role config:
 
-- Handler: leave as is (`index.handler`)
+- Handler: leave as is
 - Role: leave as is (`Choose existing role`)
 - Existing role: `AlertManager`
 
@@ -107,9 +108,9 @@ Hit `[ Configure details ]` ("next"):
 - State = `enabled`
 - `[ Create rule ]`
 
-Canary will not be run automatically - every minute. You can verify it works either by:
+Canary will now be run automatically - every minute. You can verify it works either by:
 
 - Looking at the logs in `Lambda > AlertManager-Canary > Monitoring > Logs` or
 - Tweaking the check definitions in a way that they'll trigger an alarm and wait a minute
   to receive the alarm so you know it's working. Just remember to tweak the check back to
-  how it should be and acknowledge the alert!
+  how it should be, and acknowledge the alert!
