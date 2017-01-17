@@ -1,9 +1,9 @@
 Use case: Prometheus alerting
 =============================
 
-- Prometheus is the main component when talking about Prometheus. It monitors your services by
-  scraping them for metrics. It allows to define alerting rules for these metrics: "if this metric
-  looks like something is wrong -> raise an alert".
+- [Prometheus](https://prometheus.io/download/#prometheus) is the main component when talking about Prometheus.
+  It monitors your services by scraping them for metrics. It allows to define alerting rules for these metrics:
+  "if this metric looks like something is wrong -> raise an alert".
 
 - However, Prometheus only **raises** alerts. It does not filter or transport them. They wisely made
   this modular and separated those concerns into another Prometheus project:
