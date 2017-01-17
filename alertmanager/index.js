@@ -60,8 +60,6 @@ function failAndLog(context, failResult) {
 }
 
 var apis = {
-	// TODO: 'POST /prom-alertmanager-webhook': function () { }
-
 	'GET /alerts': function (event, context) {
 		dynamodb.scan({
 			TableName: 'alertmanager_alerts'
@@ -113,19 +111,19 @@ var apis = {
 			dynamodb.scan({
 				TableName: 'alertmanager_alerts',
 				Limit: 1000 // whichever comes first, 1 MB or 1 000 records
-			}, function (err, data){
+			}, function (err, firingAlertsResult){
 				if (err) {
 					context.fail(err);
 					return;
 				}
 
-				if (data.Items.length >= MAX_FIRING_ALERTS) {
+				if (firingAlertsResult.Items.length >= MAX_FIRING_ALERTS) {
 					// should not context.fail(), as otherwise the submitter could re-try again (that would be undesirable)
 					httpSucceedAndLog(context, "Max alerts already firing. Discarding the submitted alert.");
 					return;
 				}
 
-				var items = data.Items.map(unwrapDynamoDBTypedObject);
+				var items = firingAlertsResult.Items.map(unwrapDynamoDBTypedObject);
 
 				var largestNumber = 0;
 
@@ -176,6 +174,47 @@ var apis = {
 		}
 
 		trySaveOnce(1);
+	},
+
+	// Prometheus integration
+	'POST /prometheus-alertmanager/api/v1/alerts': function (event, context) {
+		var eventBody = JSON.parse(event.body);
+		/*	eventBody=
+			[
+			  {
+			    "labels": {
+			      "alertname": "dummy_service_down",
+			      "instance": "10.0.0.17:80",
+			      "job": "prometheus-dummy-service"
+			    },
+			    "annotations": {
+			      
+			    },
+			    "startsAt": "2017-01-17T08:42:07.804Z",
+			    "endsAt": "2017-01-17T08:42:52.806Z",
+			    "generatorURL": "http://f67e003689ac:9090/graph?g0.expr=fictional_healthmeter%7Bjob%3D%22prometheus-dummy-service%22%7D+%3C+50\\u0026g0.tab=0"
+			  }
+			]
+		*/
+
+		// FIXME: this only takes care of the first alert
+		var subject = eventBody.length === 1 ?
+			eventBody[0].labels.alertname :
+			'Alert count not 1, was: ' + eventBody.length; // Fallback for actually letting us now
+
+		// convert to simulated incoming HTTP message
+		var simulatedHttpEvent = {
+			httpMethod: 'POST',
+			path: '/alerts/ingest',
+			body: JSON.stringify({
+				subject: subject,
+				details: "Job: " + eventBody[0].labels.job + "\nInstance: " + eventBody[0].labels.instance,
+				timestamp: eventBody[0].startsAt
+			})
+		};
+		
+		// run the main dispatcher again
+		exports.handler(simulatedHttpEvent, context);
 	},
 
 	'SNS: ingest': function (event, context) {
