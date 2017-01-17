@@ -4,7 +4,7 @@ Use case: CloudWatch alerting
 NOTE: this guide applies to most AWS services - not just SQS. But we'll use SQS as an example.
 
 Let's say that you have queue workers (whether in AWS or outside of AWS) that use AWS's SQS
-(Simple Queue Service). Great way to detect problems is to detect if they queue is backing up.
+(Simple Queue Service). Great way to detect problems is to detect if the queue is backing up.
 
 
 What does a healhy queue look like?
@@ -31,7 +31,7 @@ Unhealthy queue gets messages sent to it faster than they are processed. Looks l
 Observations:
 
 - Items are sent to the queue pretty constantly.
-- Visible messages (= messages that are not yet consumed by a worker) ARE NOT close to zero.
+- Visible messages ARE NOT close to zero.
 
 
 Creating a CloudWatch alarm to detect unhealthy queue
