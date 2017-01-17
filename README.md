@@ -3,8 +3,10 @@ lambda-alertmanager?
 
 - Provides simple & reliable alerting for your infrastructure.
 - Uses so little resources that it is practically free to run.
-- [Monitors your web properties for being up](docs/usecase_http-monitoring.md), receive alerts from Prometheus,
-  Amazon CloudWatch alarms, alarms via SNS topic or any custom HTTP integration (as JSON).
+- [Monitors your web properties for being up](docs/usecase_http-monitoring.md),
+  [receive alerts from Prometheus](docs/usecase_prometheus-alerting.md),
+  [Amazon CloudWatch alarms](docs/usecase_cloudwatch-alerting.md), alarms via SNS topic or
+  [any custom HTTP integration (as JSON)](docs/setup_custom_integration.md).
 - Runs **entirely** on AWS' reliable infrastructure (after setup nothing for you to manage or fix). The compute part is Lambda,
   but we also use DynamoDB + streams (for state), IAM (for sandboxing AlertManager), API Gateway (for inbound https integrations),
   CloudWatch Events (for scheduling) and SNS (inbound alarm receiving, outbound alert delivery).
@@ -59,8 +61,9 @@ Follow these steps precisely, and you've got yourself a working installation:
 4. [Set up AlertManager](docs/setup_alertmanager.md)
 5. [Set up API Gateway](docs/setup_apigateway.md) (also includes: testing that this works)
 6. (recommended) [Set up AlertManager-canary](docs/setup_alertmanager-canary.md)
-7. (optional) Set up Prometheus integration
+7. (optional) [Set up Prometheus integration](docs/usecase_prometheus-alerting.md)
 8. (optional) [Set up custom integration](docs/setup_custom_integration.md)
+9. (optional) [Set up CloudWatch integration](docs/usecase_cloudwatch-alerting.md)
 
 
 Diagram
@@ -109,7 +112,7 @@ Q: Why use this, [uptimerobot.com](https://uptimerobot.com/) is free?
 
 A: uptimerobot.com is awesome, but:
 
-- It only supports 5 minute rates while lambda-alertmanager supports 1 minute rates.
+- The free option only supports 5 minute rates while lambda-alertmanager supports 1 minute rates.
 - It does mainly HTTP/HTTPS checks, while lambda-alertmanager integrates with Prometheus, Amazon CloudWatch & others as well.
 - It supports free SMS messages (no delivery guarantees), but they have non-free "pro SMS" (better delivery).
   lambda-alertmanager SMSes are all "pro SMS" and free to a certain limit.
