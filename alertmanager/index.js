@@ -260,8 +260,17 @@ var apis = {
 
 		var record = unwrapDynamoDBTypedObject(event.Records[0].dynamodb.NewImage);
 
+		var messageText = record.subject + "\n\n" + record.details;
+		var messageByProtocol = {
+			default: messageText, // email etc.
+
+			// longer than 160 char SMS messages add up costs
+			sms: messageText.substr(0, 160 - 7) // -7 for "ALERT >" prefix in SMS messages
+		};
+
 		sns.publish({
-			Message: record.subject + "\n\n" + record.details,
+			MessageStructure: 'json',
+			Message: JSON.stringify(messageByProtocol),
 			Subject: record.subject,
 			TopicArn: ALERT_TOPIC
 		}, function (err) {
