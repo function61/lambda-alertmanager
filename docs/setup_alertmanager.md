@@ -11,8 +11,7 @@ Create Lambda function
 - Description: `AlertManager main: ingestor & alerter`
 - Runtime: `Node.js 4.3`
 - Code entry type: `Upload a .ZIP file`
-- Download
-  [alertmanager-2017-01-16.zip](https://s3.amazonaws.com/files.function61.com/alertmanager/alertmanager-2017-01-16.zip)
+- Download latest `alertmanager.zip` from releases -page (in GitHub)
   to your desktop and then upload to Lambda
 
 Env variables:

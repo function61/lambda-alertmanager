@@ -13,8 +13,7 @@ Create the Lambda function
 - Description: `Checks that important web properties are working.`
 - Runtime: `Node.js 4.3` (or higher)
 - Code entry type: `Upload a .ZIP file`
-- Download
-  [alertmanager-canary-2017-01-16.zip](https://s3.amazonaws.com/files.function61.com/alertmanager/alertmanager-canary-2017-01-16.zip)
+- Download latest `alertmanager-canary.zip` from releases -page (in GitHub)
   to your desktop and then upload to Lambda
 
 Now, for each property that you want to monitor, add those checks as separate ENV variables. Example:
