@@ -120,3 +120,13 @@ A: uptimerobot.com is awesome, but:
   (AWS is not going anywhere).
 - That being said, lambda-alertmanager is not "dead simple" to set up and you need an AWS account. If your use
   case does not require lambda-alertmanager, you should probably choose uptimerobot. :)
+
+
+Support / contact
+-----------------
+
+Basic support (no guarantees) for issues / feature requests via GitHub issues.
+
+Paid support is available via [function61.com/consulting](https://function61.com/consulting/)
+
+Contact options (email, Twitter etc.) at [function61.com](https://function61.com/)
