@@ -122,8 +122,9 @@ handlerInternal(testMockActions)
 
 		assertEqual(alerts[1].subject, 'https://this-one-always-timeouts.net/');
 		assertEqual(alerts[1].details, 'Error: Faking timeout');
-	},
-	() => {
-		throw new Error('rejected for some reason');
-	}
-);
+	})
+	.catch((err) => {
+		// tslint:disable-next-line:no-console
+		console.error(err);
+		process.exit(1);
+	});
