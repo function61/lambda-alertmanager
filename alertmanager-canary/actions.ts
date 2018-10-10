@@ -1,6 +1,6 @@
 import * as AWS from 'aws-sdk';
 import { httpGetBody } from './http';
-import { Target, TargetCheckResult } from './types';
+import { Target } from './types';
 
 const sns = new AWS.SNS();
 
@@ -24,8 +24,10 @@ export class ProdActions implements ActionInterface {
 				if (!target) {
 					return Promise.reject(
 						new Error(
-							`failed to parse target ${key}: ${process.env[key]}`
-						)
+							`failed to parse target ${key}: ${
+								process.env[key]
+							}`,
+						),
 					);
 				}
 
@@ -37,6 +39,7 @@ export class ProdActions implements ActionInterface {
 	}
 
 	log(msg: string) {
+		// tslint:disable-next-line:no-console
 		console.log(msg);
 	}
 
@@ -69,7 +72,7 @@ export class ProdActions implements ActionInterface {
 					} else {
 						resolve();
 					}
-				}
+				},
 			);
 		});
 	}

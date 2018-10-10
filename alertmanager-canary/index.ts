@@ -5,7 +5,7 @@ import { Target, TargetCheckResult } from './types';
 // wraps checkOneInternal() and adds retry capability
 function checkOneWithRetries(
 	target: Target,
-	actions: ActionInterface
+	actions: ActionInterface,
 ): Promise<TargetCheckResult> {
 	return new Promise((resolve, reject) => {
 		checkOneInternal(target, actions, false).then((result) => {
@@ -17,7 +17,7 @@ function checkOneWithRetries(
 					// this time, wire outcome directly to resolve
 					checkOneInternal(target, actions, true).then(
 						resolve,
-						reject
+						reject,
 					);
 				}, retryInMs);
 			} else {
@@ -30,7 +30,7 @@ function checkOneWithRetries(
 function checkOneInternal(
 	target: Target,
 	actions: ActionInterface,
-	finalTry: boolean
+	finalTry: boolean,
 ): Promise<TargetCheckResult> {
 	return new Promise((resolve, reject) => {
 		const next = (result: TargetCheckResult) => {
@@ -53,7 +53,7 @@ function checkOneInternal(
 					(err: Error) => {
 						// failure posting alert
 						reject(err);
-					}
+					},
 				);
 			} else {
 				resolve(result);
@@ -78,29 +78,29 @@ function checkOneInternal(
 				const durationMs = actions.measureDuration(now(), timeStarted);
 
 				next({ target, durationMs, error: err.toString() });
-			}
+			},
 		);
 	});
 }
 
 // actual internal handler exported for testing purposes
-export const handler_ = function(actions: ActionInterface): Promise<string> {
+export function handlerInternal(actions: ActionInterface): Promise<string> {
 	return actions.resolveTargets().then((targets) => {
 		// runs all checks in parallel
-		const allChecksPromises: Promise<TargetCheckResult>[] = targets.map(
-			(target) => checkOneWithRetries(target, actions)
-		);
+		const allChecksPromises: Array<
+			Promise<TargetCheckResult>
+		> = targets.map((target) => checkOneWithRetries(target, actions));
 
 		return Promise.all(allChecksPromises).then((allTargetCheckResults) => {
 			const numFailed = allTargetCheckResults.filter(
-				(check) => check.error !== undefined
+				(check) => check.error !== undefined,
 			).length;
 			const numTotal = allTargetCheckResults.length;
 			const numSucceeded = numTotal - numFailed;
 
 			if (numFailed > 0) {
 				actions.log(
-					'=> FAIL (' + numSucceeded + '/' + numTotal + ') succeeded'
+					'=> FAIL (' + numSucceeded + '/' + numTotal + ') succeeded',
 				);
 			} else {
 				actions.log('=> All passed. Awesome!');
@@ -111,12 +111,11 @@ export const handler_ = function(actions: ActionInterface): Promise<string> {
 			return 'Canary finished';
 		});
 	});
-};
+}
 
 // input is CloudWatch event, but typings are not available for it
-export const handler: Handler<void, string> = function() {
-	return handler_(new ProdActions());
-};
+export const handler: Handler<void, string> = () =>
+	handlerInternal(new ProdActions());
 
 function oneLinerize(input: string): string {
 	return input.replace(/\n/g, '\\n');
