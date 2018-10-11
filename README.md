@@ -80,9 +80,13 @@ FAQ
 
 Q: Why use this, [uptimerobot.com](https://uptimerobot.com/) is free?
 
-A: uptimerobot.com is awesome, but:
+A: uptimerobot.com is good, but:
 
 - The free option only supports 5 minute rates while lambda-alertmanager supports 1 minute rates.
+- I don't trust the quality of it for my production usage: I had an issue where a failed check
+  after fixing stayed failed for more than 12 hours even though I manually checked that the
+  endpoint works. I had to pause-and-then-resume the check right after it UptimeRobot
+  reported the check as OK.
 - It does mainly HTTP/HTTPS checks, while lambda-alertmanager integrates with Prometheus, Amazon CloudWatch & others as well.
 - It supports free SMS messages (no delivery guarantees), but they have non-free "pro SMS" (better delivery).
   lambda-alertmanager SMSes are all "pro SMS" and free to a certain limit.
