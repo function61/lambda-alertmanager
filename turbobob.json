@@ -1,0 +1,20 @@
+{
+	"for_description_of_this_file_see": "https://github.com/function61/turbobob",
+	"version_major": 1,
+	"project_name": "lambda-alertmanager",
+	"builders": [
+		{
+			"name": "default",
+			"dockerfile_path": "build-default.Dockerfile",
+			"mount_source": "alertmanager-canary",
+			"mount_destination": "/app",
+			"dev_command": [
+				"bash"
+			],
+			"dev_ports": [],
+			"pass_envs": [],
+			"contextless_build": true
+		}
+	],
+	"docker_images": []
+}
