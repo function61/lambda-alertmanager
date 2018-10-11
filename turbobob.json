@@ -12,7 +12,7 @@
 				"bash"
 			],
 			"dev_ports": [],
-			"pass_envs": [],
+			"pass_envs": ["BINTRAY_CREDS"],
 			"contextless_build": true
 		}
 	],
