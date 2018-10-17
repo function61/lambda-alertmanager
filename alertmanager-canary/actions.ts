@@ -5,7 +5,8 @@ import { Target } from './types';
 const sns = new AWS.SNS();
 
 export interface ActionInterface {
-	resolveTargets: () => Promise<Target[]>;
+	getTargets: () => Promise<Target[]>;
+	setTargets: (targets: Target[]) => Promise<void>;
 	httpGetBody: (url: string) => Promise<string>;
 	log: (msg: string) => void;
 	measureDuration: (started: number, ended: number) => number;
@@ -15,7 +16,7 @@ export interface ActionInterface {
 const INGEST_TOPIC = process.env.INGEST_TOPIC;
 
 export class ProdActions implements ActionInterface {
-	resolveTargets() {
+	getTargets() {
 		const targets: Target[] = [];
 
 		for (const key in process.env) {
@@ -36,6 +37,10 @@ export class ProdActions implements ActionInterface {
 		}
 
 		return Promise.resolve(targets);
+	}
+
+	setTargets(targets: Target[]) {
+		return Promise.reject(new Error('not implemented yet'));
 	}
 
 	log(msg: string) {

@@ -1,6 +1,7 @@
 import { APIGatewayProxyEvent, ScheduledEvent } from 'aws-lambda';
 import { ActionInterface } from './actions';
 import { handlerWithActions, isAPIGatewayProxyResult } from './index';
+import { Target } from './types';
 
 class TestMockActions implements ActionInterface {
 	alerts: Array<{ subject: string; details: string }> = [];
@@ -8,7 +9,7 @@ class TestMockActions implements ActionInterface {
 
 	private flakyTimeoutsTargetFirstRequest = true;
 
-	resolveTargets() {
+	getTargets() {
 		return Promise.resolve([
 			{
 				url: 'https://this-one-succeeds.com/',
@@ -21,6 +22,10 @@ class TestMockActions implements ActionInterface {
 			},
 			{ url: 'https://this-one-always-timeouts.net/', find: 'foo' },
 		]);
+	}
+
+	setTargets(targets: Target[]) {
+		return Promise.reject(new Error('not implemented yet'));
 	}
 
 	log(msg: string) {
@@ -86,9 +91,9 @@ function mockProxyEvent(path: string): APIGatewayProxyEvent {
 	} as any) as APIGatewayProxyEvent;
 }
 
-async function testProxy() {
+async function testRestApiGetTargets() {
 	const resp = await handlerWithActions(
-		mockProxyEvent('/hello'),
+		mockProxyEvent('/targets'),
 		testMockActions,
 	);
 	if (!isAPIGatewayProxyResult(resp)) {
@@ -97,7 +102,11 @@ async function testProxy() {
 
 	assertEqual(resp.statusCode, 200);
 	assertEqual(resp.headers!['Content-Type'], 'application/json');
-	assertEqual(resp.body, 'you requested /hello');
+
+	const targets: Target[] = JSON.parse(resp.body);
+
+	assertEqual(targets.length, 4);
+	assertEqual(targets[0].url, 'https://this-one-succeeds.com/');
 }
 
 async function testCanary() {
@@ -153,7 +162,7 @@ async function testCanary() {
 async function runAllTests() {
 	try {
 		await testCanary();
-		await testProxy();
+		await testRestApiGetTargets();
 	} catch (err) {
 		// tslint:disable-next-line:no-console
 		console.error(err);
