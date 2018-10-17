@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, ScheduledEvent } from 'aws-lambda';
 import { ActionInterface } from './actions';
 import { handlerWithActions, isAPIGatewayProxyResult } from './index';
-import { Target } from './types';
+import { Config } from './types';
 
 class TestMockActions implements ActionInterface {
 	alerts: Array<{ subject: string; details: string }> = [];
@@ -9,22 +9,46 @@ class TestMockActions implements ActionInterface {
 
 	private flakyTimeoutsTargetFirstRequest = true;
 
-	getTargets() {
-		return Promise.resolve([
-			{
-				url: 'https://this-one-succeeds.com/',
-				find: 'but not the body you deserve',
-			},
-			{ url: 'https://this-one-fails.com/', find: 'will not be found' },
-			{
-				url: 'https://this-one-timeouts-only-the-first-try.net/',
-				find: 'this is a response',
-			},
-			{ url: 'https://this-one-always-timeouts.net/', find: 'foo' },
-		]);
+	getConfig() {
+		return Promise.resolve({
+			ingestSnsTopic:
+				'arn:aws:sns:us-east-1:123456789123:AlertManager-ingest',
+			targets: [
+				{
+					id: '1',
+					enabled: true,
+					url: 'https://this-one-succeeds.com/',
+					find: 'but not the body you deserve',
+				},
+				{
+					id: '2',
+					enabled: true,
+					url: 'https://this-one-fails.com/',
+					find: 'will not be found',
+				},
+				{
+					id: '3',
+					enabled: true,
+					url: 'https://this-one-timeouts-only-the-first-try.net/',
+					find: 'this is a response',
+				},
+				{
+					id: '4',
+					enabled: true,
+					url: 'https://this-one-always-timeouts.net/',
+					find: 'foo',
+				},
+				{
+					id: '5',
+					enabled: false, // => won't show up in tests
+					url: 'https://this-one-is-not-enabled.org/',
+					find: 'doesntmatter',
+				},
+			],
+		});
 	}
 
-	setTargets(targets: Target[]) {
+	setConfig(config: Config) {
 		return Promise.reject(new Error('not implemented yet'));
 	}
 
@@ -62,7 +86,7 @@ class TestMockActions implements ActionInterface {
 		}
 	}
 
-	postSnsAlert(subject: string, details: string) {
+	postSnsAlert(ingestTopic: string, subject: string, details: string) {
 		this.alerts.push({ subject, details });
 
 		return Promise.resolve();
@@ -84,16 +108,21 @@ export function mockScheduledEvent(): ScheduledEvent {
 	} as any) as ScheduledEvent;
 }
 
-function mockProxyEvent(path: string): APIGatewayProxyEvent {
+function mockProxyEvent(
+	httpMethod: string,
+	path: string,
+	body: string,
+): APIGatewayProxyEvent {
 	return ({
-		httpMethod: 'GET',
+		httpMethod,
 		path,
+		body,
 	} as any) as APIGatewayProxyEvent;
 }
 
-async function testRestApiGetTargets() {
+async function testRestApiGetConfig() {
 	const resp = await handlerWithActions(
-		mockProxyEvent('/targets'),
+		mockProxyEvent('GET', '/config', ''),
 		testMockActions,
 	);
 	if (!isAPIGatewayProxyResult(resp)) {
@@ -103,10 +132,27 @@ async function testRestApiGetTargets() {
 	assertEqual(resp.statusCode, 200);
 	assertEqual(resp.headers!['Content-Type'], 'application/json');
 
-	const targets: Target[] = JSON.parse(resp.body);
+	const config: Config = JSON.parse(resp.body);
 
-	assertEqual(targets.length, 4);
-	assertEqual(targets[0].url, 'https://this-one-succeeds.com/');
+	assertEqual(
+		config.ingestSnsTopic,
+		'arn:aws:sns:us-east-1:123456789123:AlertManager-ingest',
+	);
+	assertEqual(config.targets.length, 5);
+	assertEqual(config.targets[0].url, 'https://this-one-succeeds.com/');
+}
+
+async function testRestApiPutConfig() {
+	const resp = await handlerWithActions(
+		mockProxyEvent('PUT', '/config', '{}'),
+		testMockActions,
+	);
+	if (!isAPIGatewayProxyResult(resp)) {
+		throw new Error('unexpected response');
+	}
+
+	assertEqual(resp.statusCode, 500);
+	assertEqual(resp.body, 'setConfig failed');
 }
 
 async function testCanary() {
@@ -162,7 +208,8 @@ async function testCanary() {
 async function runAllTests() {
 	try {
 		await testCanary();
-		await testRestApiGetTargets();
+		await testRestApiGetConfig();
+		await testRestApiPutConfig();
 	} catch (err) {
 		// tslint:disable-next-line:no-console
 		console.error(err);

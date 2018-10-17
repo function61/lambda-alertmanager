@@ -1,20 +1,21 @@
 import { ActionInterface } from './actions';
-import { Target, TargetCheckResult } from './types';
+import { Config, Target, TargetCheckResult } from './types';
 
 // wraps checkOneInternal() and adds retry capability
 function checkOneWithRetries(
 	target: Target,
+	config: Config,
 	actions: ActionInterface,
 ): Promise<TargetCheckResult> {
 	return new Promise((resolve, reject) => {
-		checkOneInternal(target, actions, false).then((result) => {
+		checkOneInternal(target, config, actions, false).then((result) => {
 			if (result.error !== undefined) {
 				const retryInMs = 1000;
 				actions.log(`   failed; re-trying once in ${retryInMs}ms`);
 
 				setTimeout(() => {
 					// this time, wire outcome directly to resolve
-					checkOneInternal(target, actions, true).then(
+					checkOneInternal(target, config, actions, true).then(
 						resolve,
 						reject,
 					);
@@ -28,6 +29,7 @@ function checkOneWithRetries(
 
 function checkOneInternal(
 	target: Target,
+	config: Config,
 	actions: ActionInterface,
 	finalTry: boolean,
 ): Promise<TargetCheckResult> {
@@ -45,15 +47,21 @@ function checkOneInternal(
 			actions.log(logMsg);
 
 			if (result.error !== undefined && finalTry) {
-				actions.postSnsAlert(target.url, result.error).then(
-					() => {
-						resolve(result);
-					},
-					(err: Error) => {
-						// failure posting alert
-						reject(err);
-					},
-				);
+				actions
+					.postSnsAlert(
+						config.ingestSnsTopic,
+						target.url,
+						result.error,
+					)
+					.then(
+						() => {
+							resolve(result);
+						},
+						(err: Error) => {
+							// failure posting alert
+							reject(err);
+						},
+					);
 			} else {
 				resolve(result);
 			}
@@ -83,11 +91,13 @@ function checkOneInternal(
 }
 
 export function handleCanary(actions: ActionInterface): Promise<string> {
-	return actions.getTargets().then((targets) => {
+	return actions.getConfig().then((config) => {
 		// runs all checks in parallel
 		const allChecksPromises: Array<
 			Promise<TargetCheckResult>
-		> = targets.map((target) => checkOneWithRetries(target, actions));
+		> = config.targets
+			.filter(isEnabled)
+			.map((target) => checkOneWithRetries(target, config, actions));
 
 		return Promise.all(allChecksPromises).then((allTargetCheckResults) => {
 			const numFailed = allTargetCheckResults.filter(
@@ -110,6 +120,8 @@ export function handleCanary(actions: ActionInterface): Promise<string> {
 		});
 	});
 }
+
+const isEnabled = (target: Target) => target.enabled;
 
 function oneLinerize(input: string): string {
 	return input.replace(/\n/g, '\\n');

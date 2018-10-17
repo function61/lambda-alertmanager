@@ -1,46 +1,84 @@
 import * as AWS from 'aws-sdk';
 import { httpGetBody } from './http';
-import { Target } from './types';
+import { Config } from './types';
 
-const sns = new AWS.SNS();
+const sns = new AWS.SNS({ apiVersion: '2010-03-31' });
+const s3 = new AWS.S3({ apiVersion: '2006-03-01' });
 
 export interface ActionInterface {
-	getTargets: () => Promise<Target[]>;
-	setTargets: (targets: Target[]) => Promise<void>;
+	getConfig: () => Promise<Config>;
+	setConfig: (config: Config) => Promise<void>;
 	httpGetBody: (url: string) => Promise<string>;
 	log: (msg: string) => void;
 	measureDuration: (started: number, ended: number) => number;
-	postSnsAlert: (subject: string, details: string) => Promise<void>;
+	postSnsAlert: (
+		ingestTopic: string,
+		subject: string,
+		details: string,
+	) => Promise<void>;
 }
 
-const INGEST_TOPIC = process.env.INGEST_TOPIC;
+const S3_BUCKET = process.env.S3_BUCKET;
+
+const targetsJsonKey = 'targets.json';
 
 export class ProdActions implements ActionInterface {
-	getTargets() {
-		const targets: Target[] = [];
-
-		for (const key in process.env) {
-			if (/^CHECK[0-9]+$/.test(key)) {
-				const target = JSON.parse(process.env[key]!);
-				if (!target) {
-					return Promise.reject(
-						new Error(
-							`failed to parse target ${key}: ${
-								process.env[key]
-							}`,
-						),
-					);
-				}
-
-				targets.push(target);
+	getConfig() {
+		return new Promise<Config>((resolve, reject) => {
+			if (!S3_BUCKET) {
+				reject(new Error('S3_BUCKET not set'));
+				return;
 			}
-		}
 
-		return Promise.resolve(targets);
+			s3.getObject(
+				{
+					Bucket: S3_BUCKET,
+					Key: targetsJsonKey,
+				},
+				(err, resp) => {
+					if (err) {
+						reject(err);
+						return;
+					}
+
+					// can't believe the API can't explicitly specify what the hell it returns
+					if (typeof resp.Body !== 'string') {
+						reject(new Error('Unexpected S3 response body type'));
+						return;
+					}
+
+					const config: Config = JSON.parse(resp.Body);
+
+					resolve(config);
+				},
+			);
+		});
 	}
 
-	setTargets(targets: Target[]) {
-		return Promise.reject(new Error('not implemented yet'));
+	setConfig(config: Config) {
+		return new Promise<void>((resolve, reject) => {
+			if (!S3_BUCKET) {
+				reject(new Error('S3_BUCKET not set'));
+				return;
+			}
+
+			s3.putObject(
+				{
+					Body: JSON.stringify(config),
+					Bucket: S3_BUCKET,
+					Key: targetsJsonKey,
+					ContentType: 'application/json',
+				},
+				(err, data) => {
+					if (err) {
+						reject(err);
+						return;
+					}
+
+					resolve();
+				},
+			);
+		});
 	}
 
 	log(msg: string) {
@@ -56,15 +94,8 @@ export class ProdActions implements ActionInterface {
 		return httpGetBody(url);
 	}
 
-	postSnsAlert(subject: string, details: string) {
+	postSnsAlert(ingestTopic: string, subject: string, details: string) {
 		return new Promise<void>((resolve, reject) => {
-			if (!INGEST_TOPIC) {
-				reject(new Error('INGEST_TOPIC not defined'));
-				return;
-			}
-
-			const ingestTopic: string = INGEST_TOPIC;
-
 			sns.publish(
 				{
 					TopicArn: ingestTopic,
