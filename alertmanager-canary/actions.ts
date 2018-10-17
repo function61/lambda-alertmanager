@@ -42,12 +42,12 @@ export class ProdActions implements ActionInterface {
 					}
 
 					// can't believe the API can't explicitly specify what the hell it returns
-					if (typeof resp.Body !== 'string') {
+					if (!(resp.Body instanceof Buffer)) {
 						reject(new Error('Unexpected S3 response body type'));
 						return;
 					}
 
-					const config: Config = JSON.parse(resp.Body);
+					const config: Config = JSON.parse(resp.Body.toString());
 
 					resolve(config);
 				},
