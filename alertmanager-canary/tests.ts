@@ -1,5 +1,6 @@
+import { APIGatewayProxyEvent, ScheduledEvent } from 'aws-lambda';
 import { ActionInterface } from './actions';
-import { handlerInternal } from './index';
+import { handlerWithActions, isAPIGatewayProxyResult } from './index';
 
 class TestMockActions implements ActionInterface {
 	alerts: Array<{ subject: string; details: string }> = [];
@@ -71,60 +72,97 @@ function assertEqual(actual: any, expected: any): void {
 	}
 }
 
-process.on('uncaughtException', () => {
-	process.exit(1);
-});
+export function mockScheduledEvent(): ScheduledEvent {
+	return ({
+		source: 'aws.events',
+		'detail-type': 'Scheduled Event',
+	} as any) as ScheduledEvent;
+}
 
-handlerInternal(testMockActions)
-	.then(() => {
-		const logs = testMockActions.logMessages;
+function mockProxyEvent(path: string): APIGatewayProxyEvent {
+	return ({
+		httpMethod: 'GET',
+		path,
+	} as any) as APIGatewayProxyEvent;
+}
 
-		assertEqual(logs.length, 11);
-		assertEqual(logs[0], '✓  https://this-one-succeeds.com/ @ 0ms => OK');
-		assertEqual(
-			logs[1],
-			'✗  https://this-one-fails.com/ @ 0ms => find<will not be found> NOT in body<the body you need, but not the body you deserve>',
-		);
-		assertEqual(
-			logs[2],
-			'✗  https://this-one-timeouts-only-the-first-try.net/ @ 0ms => Error: Faking timeout',
-		);
-		assertEqual(
-			logs[3],
-			'✗  https://this-one-always-timeouts.net/ @ 0ms => Error: Faking timeout',
-		);
-		assertEqual(logs[4], '   failed; re-trying once in 1000ms');
-		assertEqual(logs[5], '   failed; re-trying once in 1000ms');
-		assertEqual(logs[6], '   failed; re-trying once in 1000ms');
-		assertEqual(
-			logs[7],
-			'✗  https://this-one-fails.com/ @ 0ms => find<will not be found> NOT in body<the body you need, but not the body you deserve>',
-		);
-		assertEqual(
-			logs[8],
-			'✓  https://this-one-timeouts-only-the-first-try.net/ @ 0ms => OK',
-		);
-		assertEqual(
-			logs[9],
-			'✗  https://this-one-always-timeouts.net/ @ 0ms => Error: Faking timeout',
-		);
-		assertEqual(logs[10], '=> FAIL (2/4) succeeded');
+async function testProxy() {
+	const resp = await handlerWithActions(
+		mockProxyEvent('/hello'),
+		testMockActions,
+	);
+	if (!isAPIGatewayProxyResult(resp)) {
+		throw new Error('unexpected response');
+	}
 
-		const alerts = testMockActions.alerts;
+	assertEqual(resp.statusCode, 200);
+	assertEqual(resp.headers!['Content-Type'], 'application/json');
+	assertEqual(resp.body, 'you requested /hello');
+}
 
-		assertEqual(alerts.length, 2);
+async function testCanary() {
+	await handlerWithActions(mockScheduledEvent(), testMockActions);
 
-		assertEqual(alerts[0].subject, 'https://this-one-fails.com/');
-		assertEqual(
-			alerts[0].details,
-			'find<will not be found> NOT in body<the body you need, but not the body you deserve>',
-		);
+	const logs = testMockActions.logMessages;
 
-		assertEqual(alerts[1].subject, 'https://this-one-always-timeouts.net/');
-		assertEqual(alerts[1].details, 'Error: Faking timeout');
-	})
-	.catch((err) => {
+	assertEqual(logs.length, 11);
+	assertEqual(logs[0], '✓  https://this-one-succeeds.com/ @ 0ms => OK');
+	assertEqual(
+		logs[1],
+		'✗  https://this-one-fails.com/ @ 0ms => find<will not be found> NOT in body<the body you need, but not the body you deserve>',
+	);
+	assertEqual(
+		logs[2],
+		'✗  https://this-one-timeouts-only-the-first-try.net/ @ 0ms => Error: Faking timeout',
+	);
+	assertEqual(
+		logs[3],
+		'✗  https://this-one-always-timeouts.net/ @ 0ms => Error: Faking timeout',
+	);
+	assertEqual(logs[4], '   failed; re-trying once in 1000ms');
+	assertEqual(logs[5], '   failed; re-trying once in 1000ms');
+	assertEqual(logs[6], '   failed; re-trying once in 1000ms');
+	assertEqual(
+		logs[7],
+		'✗  https://this-one-fails.com/ @ 0ms => find<will not be found> NOT in body<the body you need, but not the body you deserve>',
+	);
+	assertEqual(
+		logs[8],
+		'✓  https://this-one-timeouts-only-the-first-try.net/ @ 0ms => OK',
+	);
+	assertEqual(
+		logs[9],
+		'✗  https://this-one-always-timeouts.net/ @ 0ms => Error: Faking timeout',
+	);
+	assertEqual(logs[10], '=> FAIL (2/4) succeeded');
+
+	const alerts = testMockActions.alerts;
+
+	assertEqual(alerts.length, 2);
+
+	assertEqual(alerts[0].subject, 'https://this-one-fails.com/');
+	assertEqual(
+		alerts[0].details,
+		'find<will not be found> NOT in body<the body you need, but not the body you deserve>',
+	);
+
+	assertEqual(alerts[1].subject, 'https://this-one-always-timeouts.net/');
+	assertEqual(alerts[1].details, 'Error: Faking timeout');
+}
+
+async function runAllTests() {
+	try {
+		await testCanary();
+		await testProxy();
+	} catch (err) {
 		// tslint:disable-next-line:no-console
 		console.error(err);
 		process.exit(1);
-	});
+	}
+}
+
+// why ignore? only way to catch error is use of "await", but that can be only used from
+// "async" fn, which brings a chicken-egg type problem. this is OK because this fn "cant" fail
+//
+// tslint:disable-next-line:no-floating-promises
+runAllTests();

@@ -1,4 +1,9 @@
-import { Handler } from 'aws-lambda';
+import {
+	APIGatewayProxyEvent,
+	APIGatewayProxyResult,
+	Handler,
+	ScheduledEvent,
+} from 'aws-lambda';
 import { ActionInterface, ProdActions } from './actions';
 import { Target, TargetCheckResult } from './types';
 
@@ -83,8 +88,7 @@ function checkOneInternal(
 	});
 }
 
-// actual internal handler exported for testing purposes
-export function handlerInternal(actions: ActionInterface): Promise<string> {
+function handleCanary(actions: ActionInterface): Promise<string> {
 	return actions.resolveTargets().then((targets) => {
 		// runs all checks in parallel
 		const allChecksPromises: Array<
@@ -113,9 +117,41 @@ export function handlerInternal(actions: ActionInterface): Promise<string> {
 	});
 }
 
-// input is CloudWatch event, but typings are not available for it
-export const handler: Handler<void, string> = () =>
-	handlerInternal(new ProdActions());
+function handleProxyEvent(
+	event: APIGatewayProxyEvent,
+): Promise<APIGatewayProxyResult> {
+	return Promise.resolve({
+		statusCode: 200,
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: `you requested ${event.path}`,
+	});
+}
+
+// exported for testing purposes
+export function handlerWithActions(
+	event: ScheduledEvent | APIGatewayProxyEvent,
+	actions: ActionInterface,
+): Promise<string | APIGatewayProxyResult> {
+	// "multiplexed" handler => recognize format of incoming event. this is really ugly.
+	if (isScheduledEvent(event)) {
+		return handleCanary(actions);
+	} else if (isProxyEvent(event)) {
+		return handleProxyEvent(event);
+	} else {
+		return Promise.reject('unknown event');
+	}
+}
+
+const prodActions = new ProdActions();
+
+export const handler: Handler<
+	ScheduledEvent | APIGatewayProxyEvent,
+	string | APIGatewayProxyResult
+> = (event) => {
+	return handlerWithActions(event, prodActions);
+};
 
 function oneLinerize(input: string): string {
 	return input.replace(/\n/g, '\\n');
@@ -129,4 +165,29 @@ function now(): number {
 	// we could use performance.now() for sub-millisecond measurements,
 	// but for network I/O this precision is sufficient
 	return new Date().getTime();
+}
+
+function isScheduledEvent(input: any): input is ScheduledEvent {
+	if (!('source' in input) || input.source !== 'aws.events') {
+		return false;
+	}
+
+	if (
+		!('detail-type' in input) ||
+		input['detail-type'] !== 'Scheduled Event'
+	) {
+		return false;
+	}
+
+	return true;
+}
+
+function isProxyEvent(input: any): input is APIGatewayProxyEvent {
+	return 'httpMethod' in input && 'path' in input;
+}
+
+export function isAPIGatewayProxyResult(
+	input: any,
+): input is APIGatewayProxyResult {
+	return 'statusCode' in input && 'headers' in input;
 }
