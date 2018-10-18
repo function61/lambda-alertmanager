@@ -1,21 +1,21 @@
 import { ActionInterface } from './actions';
-import { Config, Target, TargetCheckResult } from './types';
+import { Config, Monitor, MonitorCheckResult } from './types';
 
 // wraps checkOneInternal() and adds retry capability
 function checkOneWithRetries(
-	target: Target,
+	monitor: Monitor,
 	config: Config,
 	actions: ActionInterface,
-): Promise<TargetCheckResult> {
+): Promise<MonitorCheckResult> {
 	return new Promise((resolve, reject) => {
-		checkOneInternal(target, config, actions, false).then((result) => {
+		checkOneInternal(monitor, config, actions, false).then((result) => {
 			if (result.error !== undefined) {
 				const retryInMs = 1000;
 				actions.log(`   failed; re-trying once in ${retryInMs}ms`);
 
 				setTimeout(() => {
 					// this time, wire outcome directly to resolve
-					checkOneInternal(target, config, actions, true).then(
+					checkOneInternal(monitor, config, actions, true).then(
 						resolve,
 						reject,
 					);
@@ -28,19 +28,19 @@ function checkOneWithRetries(
 }
 
 function checkOneInternal(
-	target: Target,
+	monitor: Monitor,
 	config: Config,
 	actions: ActionInterface,
 	finalTry: boolean,
-): Promise<TargetCheckResult> {
+): Promise<MonitorCheckResult> {
 	return new Promise((resolve, reject) => {
-		const next = (result: TargetCheckResult) => {
+		const next = (result: MonitorCheckResult) => {
 			const logMsgSucceededSign = result.error !== undefined ? '✗' : '✓';
 			const logMsgDetails =
 				result.error !== undefined
 					? truncate(oneLinerize(result.error), 128)
 					: 'OK';
-			const logMsg = `${logMsgSucceededSign}  ${target.url} @ ${
+			const logMsg = `${logMsgSucceededSign}  ${monitor.url} @ ${
 				result.durationMs
 			}ms => ${logMsgDetails}`;
 
@@ -49,8 +49,8 @@ function checkOneInternal(
 			if (result.error !== undefined && finalTry) {
 				actions
 					.postSnsAlert(
-						config.ingestSnsTopic,
-						target.url,
+						config.sns_topic_ingest,
+						monitor.url,
 						result.error,
 					)
 					.then(
@@ -69,22 +69,22 @@ function checkOneInternal(
 
 		const timeStarted = now();
 
-		actions.httpGetBody(target.url).then(
+		actions.httpGetBody(monitor.url).then(
 			(body) => {
 				const durationMs = actions.measureDuration(now(), timeStarted);
 
 				let failure: string | undefined;
 
-				if (body.indexOf(target.find) === -1) {
-					failure = `find<${target.find}> NOT in body<${body}>`;
+				if (body.indexOf(monitor.find) === -1) {
+					failure = `find<${monitor.find}> NOT in body<${body}>`;
 				}
 
-				next({ target, durationMs, error: failure });
+				next({ monitor, durationMs, error: failure });
 			},
 			(err: Error) => {
 				const durationMs = actions.measureDuration(now(), timeStarted);
 
-				next({ target, durationMs, error: err.toString() });
+				next({ monitor, durationMs, error: err.toString() });
 			},
 		);
 	});
@@ -94,16 +94,16 @@ export function handleCanary(actions: ActionInterface): Promise<string> {
 	return actions.getConfig().then((config) => {
 		// runs all checks in parallel
 		const allChecksPromises: Array<
-			Promise<TargetCheckResult>
-		> = config.targets
+			Promise<MonitorCheckResult>
+		> = config.monitors
 			.filter(isEnabled)
-			.map((target) => checkOneWithRetries(target, config, actions));
+			.map((monitor) => checkOneWithRetries(monitor, config, actions));
 
-		return Promise.all(allChecksPromises).then((allTargetCheckResults) => {
-			const numFailed = allTargetCheckResults.filter(
+		return Promise.all(allChecksPromises).then((allMonitorCheckResults) => {
+			const numFailed = allMonitorCheckResults.filter(
 				(check) => check.error !== undefined,
 			).length;
-			const numTotal = allTargetCheckResults.length;
+			const numTotal = allMonitorCheckResults.length;
 			const numSucceeded = numTotal - numFailed;
 
 			if (numFailed > 0) {
@@ -121,7 +121,7 @@ export function handleCanary(actions: ActionInterface): Promise<string> {
 	});
 }
 
-const isEnabled = (target: Target) => target.enabled;
+const isEnabled = (monitor: Monitor) => monitor.enabled;
 
 function oneLinerize(input: string): string {
 	return input.replace(/\n/g, '\\n');

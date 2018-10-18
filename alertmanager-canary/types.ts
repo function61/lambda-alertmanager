@@ -1,4 +1,4 @@
-export interface Target {
+export interface Monitor {
 	id: string;
 	enabled: boolean;
 	url: string;
@@ -6,12 +6,12 @@ export interface Target {
 }
 
 export interface Config {
-	ingestSnsTopic: string;
-	targets: Target[];
+	sns_topic_ingest: string;
+	monitors: Monitor[];
 }
 
-export interface TargetCheckResult {
-	target: Target;
+export interface MonitorCheckResult {
+	monitor: Monitor;
 	error?: string;
 	durationMs: number;
 }

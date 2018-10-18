@@ -20,7 +20,7 @@ export interface ActionInterface {
 
 const S3_BUCKET = process.env.S3_BUCKET;
 
-const targetsJsonKey = 'targets.json';
+const configJsonKey = 'config.json';
 
 export class ProdActions implements ActionInterface {
 	getConfig() {
@@ -33,7 +33,7 @@ export class ProdActions implements ActionInterface {
 			s3.getObject(
 				{
 					Bucket: S3_BUCKET,
-					Key: targetsJsonKey,
+					Key: configJsonKey,
 				},
 				(err, resp) => {
 					if (err) {
@@ -66,7 +66,7 @@ export class ProdActions implements ActionInterface {
 				{
 					Body: JSON.stringify(config),
 					Bucket: S3_BUCKET,
-					Key: targetsJsonKey,
+					Key: configJsonKey,
 					ContentType: 'application/json',
 				},
 				(err, data) => {

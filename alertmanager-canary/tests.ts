@@ -7,13 +7,13 @@ class TestMockActions implements ActionInterface {
 	alerts: Array<{ subject: string; details: string }> = [];
 	logMessages: string[] = [];
 
-	private flakyTimeoutsTargetFirstRequest = true;
+	private flakyTimeoutsMonitorFirstRequest = true;
 
 	getConfig() {
 		return Promise.resolve({
-			ingestSnsTopic:
+			sns_topic_ingest:
 				'arn:aws:sns:us-east-1:123456789123:AlertManager-ingest',
-			targets: [
+			monitors: [
 				{
 					id: '1',
 					enabled: true,
@@ -72,8 +72,8 @@ class TestMockActions implements ActionInterface {
 			case 'https://this-one-always-timeouts.net/':
 				return Promise.reject(new Error('Faking timeout'));
 			case 'https://this-one-timeouts-only-the-first-try.net/':
-				if (this.flakyTimeoutsTargetFirstRequest) {
-					this.flakyTimeoutsTargetFirstRequest = false;
+				if (this.flakyTimeoutsMonitorFirstRequest) {
+					this.flakyTimeoutsMonitorFirstRequest = false;
 					return Promise.reject(new Error('Faking timeout'));
 				}
 
@@ -135,11 +135,11 @@ async function testRestApiGetConfig() {
 	const config: Config = JSON.parse(resp.body);
 
 	assertEqual(
-		config.ingestSnsTopic,
+		config.sns_topic_ingest,
 		'arn:aws:sns:us-east-1:123456789123:AlertManager-ingest',
 	);
-	assertEqual(config.targets.length, 5);
-	assertEqual(config.targets[0].url, 'https://this-one-succeeds.com/');
+	assertEqual(config.monitors.length, 5);
+	assertEqual(config.monitors[0].url, 'https://this-one-succeeds.com/');
 }
 
 async function testRestApiPutConfig() {
