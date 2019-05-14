@@ -50,7 +50,7 @@ func tryIngestAlertOnce(alert alertmanagertypes.Alert) (bool, error) {
 		return false, err
 	}
 
-	result, err := dynamodbSvc.Scan(&dynamodb.ScanInput{
+	scanResult, err := dynamodbSvc.Scan(&dynamodb.ScanInput{
 		TableName: alertsDynamoDbTableName,
 		Limit:     aws.Int64(1000), // whichever comes first, 1 MB or 1 000 records
 	})
@@ -58,14 +58,14 @@ func tryIngestAlertOnce(alert alertmanagertypes.Alert) (bool, error) {
 		return false, err
 	}
 
-	if len(result.Items) >= maxFiringAlerts {
+	if len(scanResult.Items) >= maxFiringAlerts {
 		log.Println("Max alerts already firing. Discarding the submitted alert.")
 		return false, nil // do not save more
 	}
 
 	largestNumber := 0
 
-	for _, rawAlertInDb := range result.Items {
+	for _, rawAlertInDb := range scanResult.Items {
 		alertInDb, err := deserializeAlertFromDynamoDb(rawAlertInDb)
 		if err != nil {
 			return false, err
