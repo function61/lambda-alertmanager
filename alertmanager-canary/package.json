@@ -1,0 +1,13 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "-",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "node tests.js"
+  },
+  "author": "",
+  "license": "ISC"
+}

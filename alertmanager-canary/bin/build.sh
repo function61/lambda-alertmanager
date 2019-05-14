@@ -2,7 +2,6 @@
 
 source /build-common.sh
 
-BINARY_NAME="alertmanager-canary"
-BINTRAY_PROJECT="function61/lambda-alertmanager"
+standardBuildProcess "backend"
 
-standardBuildProcess
+zip ../rel/alertmanager-canary.zip *.js
