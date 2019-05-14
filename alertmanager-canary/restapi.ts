@@ -2,9 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { ActionInterface } from './actions';
 import { Config } from './types';
 
-async function handleGetConfig(
-	actions: ActionInterface,
-): Promise<APIGatewayProxyResult> {
+async function handleGetConfig(actions: ActionInterface): Promise<APIGatewayProxyResult> {
 	// TODO: try-catch
 	const config = await actions.getConfig();
 

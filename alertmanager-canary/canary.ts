@@ -15,10 +15,7 @@ function checkOneWithRetries(
 
 				setTimeout(() => {
 					// this time, wire outcome directly to resolve
-					checkOneInternal(monitor, config, actions, true).then(
-						resolve,
-						reject,
-					);
+					checkOneInternal(monitor, config, actions, true).then(resolve, reject);
 				}, retryInMs);
 			} else {
 				resolve(result);
@@ -37,9 +34,7 @@ function checkOneInternal(
 		const next = (result: MonitorCheckResult) => {
 			const logMsgSucceededSign = result.error !== undefined ? '✗' : '✓';
 			const logMsgDetails =
-				result.error !== undefined
-					? truncate(oneLinerize(result.error), 128)
-					: 'OK';
+				result.error !== undefined ? truncate(oneLinerize(result.error), 128) : 'OK';
 			const logMsg = `${logMsgSucceededSign}  ${monitor.url} @ ${
 				result.durationMs
 			}ms => ${logMsgDetails}`;
@@ -47,21 +42,15 @@ function checkOneInternal(
 			actions.log(logMsg);
 
 			if (result.error !== undefined && finalTry) {
-				actions
-					.postSnsAlert(
-						config.sns_topic_ingest,
-						monitor.url,
-						result.error,
-					)
-					.then(
-						() => {
-							resolve(result);
-						},
-						(err: Error) => {
-							// failure posting alert
-							reject(err);
-						},
-					);
+				actions.postSnsAlert(config.sns_topic_ingest, monitor.url, result.error).then(
+					() => {
+						resolve(result);
+					},
+					(err: Error) => {
+						// failure posting alert
+						reject(err);
+					},
+				);
 			} else {
 				resolve(result);
 			}
@@ -93,23 +82,18 @@ function checkOneInternal(
 export function handleCanary(actions: ActionInterface): Promise<string> {
 	return actions.getConfig().then((config) => {
 		// runs all checks in parallel
-		const allChecksPromises: Array<
-			Promise<MonitorCheckResult>
-		> = config.monitors
+		const allChecksPromises: Array<Promise<MonitorCheckResult>> = config.monitors
 			.filter(isEnabled)
 			.map((monitor) => checkOneWithRetries(monitor, config, actions));
 
 		return Promise.all(allChecksPromises).then((allMonitorCheckResults) => {
-			const numFailed = allMonitorCheckResults.filter(
-				(check) => check.error !== undefined,
-			).length;
+			const numFailed = allMonitorCheckResults.filter((check) => check.error !== undefined)
+				.length;
 			const numTotal = allMonitorCheckResults.length;
 			const numSucceeded = numTotal - numFailed;
 
 			if (numFailed > 0) {
-				actions.log(
-					'=> FAIL (' + numSucceeded + '/' + numTotal + ') succeeded',
-				);
+				actions.log('=> FAIL (' + numSucceeded + '/' + numTotal + ') succeeded');
 			} else {
 				actions.log('=> All passed. Awesome!');
 			}

@@ -1,9 +1,4 @@
-import {
-	APIGatewayProxyEvent,
-	APIGatewayProxyResult,
-	Handler,
-	ScheduledEvent,
-} from 'aws-lambda';
+import { APIGatewayProxyEvent, APIGatewayProxyResult, Handler, ScheduledEvent } from 'aws-lambda';
 import { ActionInterface, ProdActions } from './actions';
 import { handleCanary } from './canary';
 import { handleRestApi } from './restapi';
@@ -37,10 +32,7 @@ function isScheduledEvent(input: any): input is ScheduledEvent {
 		return false;
 	}
 
-	if (
-		!('detail-type' in input) ||
-		input['detail-type'] !== 'Scheduled Event'
-	) {
+	if (!('detail-type' in input) || input['detail-type'] !== 'Scheduled Event') {
 		return false;
 	}
 
@@ -51,8 +43,6 @@ function isProxyEvent(input: any): input is APIGatewayProxyEvent {
 	return 'httpMethod' in input && 'path' in input;
 }
 
-export function isAPIGatewayProxyResult(
-	input: any,
-): input is APIGatewayProxyResult {
+export function isAPIGatewayProxyResult(input: any): input is APIGatewayProxyResult {
 	return 'statusCode' in input && 'headers' in input;
 }

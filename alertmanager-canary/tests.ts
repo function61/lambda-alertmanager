@@ -11,8 +11,7 @@ class TestMockActions implements ActionInterface {
 
 	getConfig() {
 		return Promise.resolve({
-			sns_topic_ingest:
-				'arn:aws:sns:us-east-1:123456789123:AlertManager-ingest',
+			sns_topic_ingest: 'arn:aws:sns:us-east-1:123456789123:AlertManager-ingest',
 			monitors: [
 				{
 					id: '1',
@@ -66,9 +65,7 @@ class TestMockActions implements ActionInterface {
 		switch (url) {
 			case 'https://this-one-succeeds.com/':
 			case 'https://this-one-fails.com/':
-				return Promise.resolve(
-					'the body you need, but not the body you deserve',
-				);
+				return Promise.resolve('the body you need, but not the body you deserve');
 			case 'https://this-one-always-timeouts.net/':
 				return Promise.reject(new Error('Faking timeout'));
 			case 'https://this-one-timeouts-only-the-first-try.net/':
@@ -108,11 +105,7 @@ export function mockScheduledEvent(): ScheduledEvent {
 	} as any) as ScheduledEvent;
 }
 
-function mockProxyEvent(
-	httpMethod: string,
-	path: string,
-	body: string,
-): APIGatewayProxyEvent {
+function mockProxyEvent(httpMethod: string, path: string, body: string): APIGatewayProxyEvent {
 	return ({
 		httpMethod,
 		path,
@@ -121,10 +114,7 @@ function mockProxyEvent(
 }
 
 async function testRestApiGetConfig() {
-	const resp = await handlerWithActions(
-		mockProxyEvent('GET', '/config', ''),
-		testMockActions,
-	);
+	const resp = await handlerWithActions(mockProxyEvent('GET', '/config', ''), testMockActions);
 	if (!isAPIGatewayProxyResult(resp)) {
 		throw new Error('unexpected response');
 	}
@@ -134,19 +124,13 @@ async function testRestApiGetConfig() {
 
 	const config: Config = JSON.parse(resp.body);
 
-	assertEqual(
-		config.sns_topic_ingest,
-		'arn:aws:sns:us-east-1:123456789123:AlertManager-ingest',
-	);
+	assertEqual(config.sns_topic_ingest, 'arn:aws:sns:us-east-1:123456789123:AlertManager-ingest');
 	assertEqual(config.monitors.length, 5);
 	assertEqual(config.monitors[0].url, 'https://this-one-succeeds.com/');
 }
 
 async function testRestApiPutConfig() {
-	const resp = await handlerWithActions(
-		mockProxyEvent('PUT', '/config', '{}'),
-		testMockActions,
-	);
+	const resp = await handlerWithActions(mockProxyEvent('PUT', '/config', '{}'), testMockActions);
 	if (!isAPIGatewayProxyResult(resp)) {
 		throw new Error('unexpected response');
 	}
@@ -170,10 +154,7 @@ async function testCanary() {
 		logs[2],
 		'✗  https://this-one-timeouts-only-the-first-try.net/ @ 0ms => Error: Faking timeout',
 	);
-	assertEqual(
-		logs[3],
-		'✗  https://this-one-always-timeouts.net/ @ 0ms => Error: Faking timeout',
-	);
+	assertEqual(logs[3], '✗  https://this-one-always-timeouts.net/ @ 0ms => Error: Faking timeout');
 	assertEqual(logs[4], '   failed; re-trying once in 1000ms');
 	assertEqual(logs[5], '   failed; re-trying once in 1000ms');
 	assertEqual(logs[6], '   failed; re-trying once in 1000ms');
@@ -181,14 +162,8 @@ async function testCanary() {
 		logs[7],
 		'✗  https://this-one-fails.com/ @ 0ms => find<will not be found> NOT in body<the body you need, but not the body you deserve>',
 	);
-	assertEqual(
-		logs[8],
-		'✓  https://this-one-timeouts-only-the-first-try.net/ @ 0ms => OK',
-	);
-	assertEqual(
-		logs[9],
-		'✗  https://this-one-always-timeouts.net/ @ 0ms => Error: Faking timeout',
-	);
+	assertEqual(logs[8], '✓  https://this-one-timeouts-only-the-first-try.net/ @ 0ms => OK');
+	assertEqual(logs[9], '✗  https://this-one-always-timeouts.net/ @ 0ms => Error: Faking timeout');
 	assertEqual(logs[10], '=> FAIL (2/4) succeeded');
 
 	const alerts = testMockActions.alerts;

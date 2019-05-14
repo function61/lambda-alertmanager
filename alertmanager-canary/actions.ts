@@ -11,11 +11,7 @@ export interface ActionInterface {
 	httpGetBody: (url: string) => Promise<string>;
 	log: (msg: string) => void;
 	measureDuration: (started: number, ended: number) => number;
-	postSnsAlert: (
-		ingestTopic: string,
-		subject: string,
-		details: string,
-	) => Promise<void>;
+	postSnsAlert: (ingestTopic: string, subject: string, details: string) => Promise<void>;
 }
 
 const S3_BUCKET = process.env.S3_BUCKET;
