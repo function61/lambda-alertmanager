@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/function61/lambda-alertmanager/alertmanager/pkg/alertmanagertypes"
+	"github.com/function61/lambda-alertmanager/alertmanager/pkg/wtfgo"
 	"log"
 	"os"
 	"strconv"
@@ -80,9 +81,7 @@ func tryIngestAlertOnce(alert alertmanagertypes.Alert) (bool, error) {
 			return false, err
 		}
 
-		if num > largestNumber {
-			largestNumber = num
-		}
+		largestNumber = wtfgo.MaxInt(largestNumber, num)
 	}
 
 	// if you want to test ConditionalCheckFailedException, don't increment this
