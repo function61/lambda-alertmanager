@@ -55,29 +55,12 @@ func handleRestCall(ctx context.Context, req events.APIGatewayProxyRequest) (*ev
 }
 
 func handleGetAlerts(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
-	result, err := dynamodbSvc.Scan(&dynamodb.ScanInput{
-		TableName: alertsDynamoDbTableName,
-	})
+	alerts, err := getAlerts()
 	if err != nil {
 		return apigatewayutils.InternalServerError(err.Error()), nil
 	}
 
-	ret := []alertmanagertypes.Alert{}
-
-	for _, item := range result.Items {
-		deserialized, err := deserializeAlertFromDynamoDb(item)
-		if err != nil {
-			panic(err)
-		}
-
-		ret = append(ret, *deserialized)
-	}
-
-	sort.Slice(ret, func(i, j int) bool {
-		return ret[i].Key < ret[j].Key
-	})
-
-	return apigatewayutils.RespondJson(ret)
+	return apigatewayutils.RespondJson(alerts)
 }
 
 func handleAcknowledgeAlert(ctx context.Context, alertKey string) (*events.APIGatewayProxyResponse, error) {
@@ -97,6 +80,33 @@ func handleAcknowledgeAlert(ctx context.Context, alertKey string) (*events.APIGa
 	}
 
 	return apigatewayutils.NoContent(), nil
+}
+
+func getAlerts() ([]alertmanagertypes.Alert, error) {
+	result, err := dynamodbSvc.Scan(&dynamodb.ScanInput{
+		TableName: alertsDynamoDbTableName,
+		Limit:     aws.Int64(1000), // whichever comes first, 1 MB or 1 000 records
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	alerts := []alertmanagertypes.Alert{}
+
+	for _, alertDb := range result.Items {
+		alert, err := deserializeAlertFromDynamoDb(alertDb)
+		if err != nil {
+			return nil, err
+		}
+
+		alerts = append(alerts, *alert)
+	}
+
+	sort.Slice(alerts, func(i, j int) bool {
+		return alerts[i].Key < alerts[j].Key
+	})
+
+	return alerts, nil
 }
 
 func ackLink(alert alertmanagertypes.Alert) string {

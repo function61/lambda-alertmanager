@@ -44,39 +44,31 @@ func ingestAlert(candidateAlert alertmanagertypes.Alert) (bool, error) {
 	}
 }
 
-func tryIngestAlertOnce(alert alertmanagertypes.Alert) (bool, error) {
+func tryIngestAlertOnce(candidateAlert alertmanagertypes.Alert) (bool, error) {
 	maxFiringAlerts, err := getMaxFiringAlerts()
 	if err != nil {
 		return false, err
 	}
 
-	scanResult, err := dynamodbSvc.Scan(&dynamodb.ScanInput{
-		TableName: alertsDynamoDbTableName,
-		Limit:     aws.Int64(1000), // whichever comes first, 1 MB or 1 000 records
-	})
+	firingAlerts, err := getAlerts()
 	if err != nil {
 		return false, err
 	}
 
-	if len(scanResult.Items) >= maxFiringAlerts {
+	if len(firingAlerts) >= maxFiringAlerts {
 		log.Println("Max alerts already firing. Discarding the submitted alert.")
 		return false, nil // do not save more
 	}
 
 	largestNumber := 0
 
-	for _, rawAlertInDb := range scanResult.Items {
-		alertInDb, err := deserializeAlertFromDynamoDb(rawAlertInDb)
-		if err != nil {
-			return false, err
-		}
-
-		if alertInDb.Subject == alert.Subject {
+	for _, firingAlert := range firingAlerts {
+		if firingAlert.Subject == candidateAlert.Subject {
 			log.Println("This alert is already firing. Discarding the submitted alert.")
 			return false, nil
 		}
 
-		num, err := strconv.Atoi(alertInDb.Key)
+		num, err := strconv.Atoi(firingAlert.Key)
 		if err != nil {
 			return false, err
 		}
@@ -85,7 +77,7 @@ func tryIngestAlertOnce(alert alertmanagertypes.Alert) (bool, error) {
 	}
 
 	// if you want to test ConditionalCheckFailedException, don't increment this
-	alert.Key = strconv.Itoa(largestNumber + 1)
+	candidateAlert.Key = strconv.Itoa(largestNumber + 1)
 
 	_, err = dynamodbSvc.PutItem(&dynamodb.PutItemInput{
 		// http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.SpecifyingConditions.html
@@ -93,7 +85,7 @@ func tryIngestAlertOnce(alert alertmanagertypes.Alert) (bool, error) {
 
 		TableName: alertsDynamoDbTableName,
 
-		Item: serializeAlertToDynamoDb(alert),
+		Item: serializeAlertToDynamoDb(candidateAlert),
 	})
 	if err != nil {
 		return false, err
