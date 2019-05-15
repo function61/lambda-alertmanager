@@ -26,9 +26,14 @@ type eventTypeProbe struct {
 // - API Gateway events
 // - SNS trigger
 // - DynamoDB trigger
+// - CloudWatch scheduled event
 func (e *eventTypeProbe) Identify() (interface{}, error) {
 	if e.HttpMethod != "" {
 		return &events.APIGatewayProxyRequest{}, nil
+	}
+
+	if e.DetailType == "Scheduled Event" {
+		return &events.CloudWatchEvent{}, nil
 	}
 
 	if e.Records[0].EventSourceDynamoDb == "aws:dynamodb" {
