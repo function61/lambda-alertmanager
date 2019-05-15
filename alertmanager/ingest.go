@@ -17,14 +17,18 @@ import (
 )
 
 // invoked for "AlertManager-ingest" SNS topic
-func handleSnsIngest(ctx context.Context, req events.SNSEvent) error {
-	_, err := ingestAlert(alertmanagertypes.Alert{
-		Subject:   req.Records[0].SNS.Subject,
-		Details:   req.Records[0].SNS.Message,
-		Timestamp: req.Records[0].SNS.Timestamp,
-	})
+func handleSnsIngest(ctx context.Context, event events.SNSEvent) error {
+	for _, msg := range event.Records {
+		if _, err := ingestAlert(alertmanagertypes.Alert{
+			Subject:   msg.SNS.Subject,
+			Details:   msg.SNS.Message,
+			Timestamp: msg.SNS.Timestamp,
+		}); err != nil {
+			return err
+		}
+	}
 
-	return err
+	return nil
 }
 
 func ingestAlert(candidateAlert alertmanagertypes.Alert) (bool, error) {
