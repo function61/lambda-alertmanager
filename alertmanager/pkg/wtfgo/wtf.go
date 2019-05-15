@@ -18,6 +18,19 @@ func Substr(input string, start int, length int) string {
 	return string(asRunes[start : start+length])
 }
 
+func Truncate(input string, to int) string {
+	// we could optimize and do len(input) here but it operates on bytes (not runes), so
+	// we could have some unexpected behaviour with input getting suffixed ... when no
+	// truncation actually happens
+	truncated := Substr(input, 0, to)
+
+	if truncated != input {
+		return truncated + "..."
+	}
+
+	return input
+}
+
 // https://stackoverflow.com/questions/27516387/what-is-the-correct-way-to-find-the-min-between-two-integers-in-go
 func MinInt(a, b int) int {
 	if a < b {

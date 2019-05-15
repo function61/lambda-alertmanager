@@ -45,15 +45,15 @@ func publishAlert(alert alertmanagertypes.Alert) error {
 		return err
 	}
 
-	byProto := struct {
+	messagePerProtocol := struct {
 		Default string `json:"default"` // email etc.
 		Sms     string `json:"sms"`
 	}{
-		Default: messageText + "\n\nAck: " + ackLink(alert),
+		Default: "Ack: " + ackLink(alert) + "\n\n" + wtfgo.Truncate(messageText, 4*1024),
 		Sms:     wtfgo.Substr(messageText, 0, 160-7), // -7 for "ALERT >" prefix in SMS messages
 	}
 
-	msgAsJson, err := json.Marshal(&byProto)
+	messagePerProtocolJson, err := json.Marshal(&messagePerProtocol)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func publishAlert(alert alertmanagertypes.Alert) error {
 	_, err = snsSvc.Publish(&sns.PublishInput{
 		TopicArn:         aws.String(alertTopic),
 		Subject:          aws.String(alert.Subject),
-		Message:          aws.String(string(msgAsJson)),
+		Message:          aws.String(string(messagePerProtocolJson)),
 		MessageStructure: aws.String("json"),
 	})
 	return err
