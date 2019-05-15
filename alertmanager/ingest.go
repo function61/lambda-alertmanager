@@ -27,11 +27,11 @@ func handleSnsIngest(ctx context.Context, req events.SNSEvent) error {
 	return err
 }
 
-func ingestAlert(item alertmanagertypes.Alert) (bool, error) {
-	triesRemaining := 5
+func ingestAlert(candidateAlert alertmanagertypes.Alert) (bool, error) {
+	triesRemaining := 3
 
 	for {
-		created, err := tryIngestAlertOnce(item)
+		created, err := tryIngestAlertOnce(candidateAlert)
 		if err == nil {
 			return created, nil
 		}
