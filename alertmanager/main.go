@@ -37,6 +37,8 @@ func main() {
 
 	lambda.StartHandler(multiLambdaEventTypeDispatcher{func(ctx context.Context, polymorphicEvent interface{}) ([]byte, error) {
 		switch event := polymorphicEvent.(type) {
+		case *events.CloudWatchEvent:
+			return nil, handleCloudwatchScheduledEvent(ctx, *event)
 		case *events.SNSEvent:
 			return nil, handleSnsIngest(ctx, *event)
 		case *events.DynamoDBEvent:

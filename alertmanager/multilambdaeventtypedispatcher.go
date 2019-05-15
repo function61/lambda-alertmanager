@@ -13,7 +13,8 @@ import (
 // we introduce just enough fields to determine what type of trigger this is, so we can
 // deserialize JSON with proper type
 type eventTypeProbe struct {
-	HttpMethod string `json:"httpMethod"`
+	HttpMethod string `json:"httpMethod"`  // APIGatewayProxyRequest
+	DetailType string `json:"detail-type"` // CloudWatchEvent
 	Records    []struct {
 		// curiously, SNS and DynamoDB event EventSource and EventVersion fields differ in case
 		EventSourceDynamoDb string `json:"eventSource"` // always "aws:dynamodb"

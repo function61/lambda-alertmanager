@@ -45,11 +45,16 @@ func publishAlert(alert alertmanagertypes.Alert) error {
 		return err
 	}
 
+	ackLinkMaybe := ""
+	if alert.Key != "" {
+		ackLinkMaybe = "Ack: " + ackLink(alert) + "\n\n"
+	}
+
 	messagePerProtocol := struct {
 		Default string `json:"default"` // email etc.
 		Sms     string `json:"sms"`
 	}{
-		Default: "Ack: " + ackLink(alert) + "\n\n" + wtfgo.Truncate(messageText, 4*1024),
+		Default: ackLinkMaybe + wtfgo.Truncate(messageText, 4*1024),
 		Sms:     wtfgo.Substr(messageText, 0, 160-7), // -7 for "ALERT >" prefix in SMS messages
 	}
 
