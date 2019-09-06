@@ -8,17 +8,25 @@ import (
 	"time"
 )
 
-// every hour or so, check for old un-acked alerts and if there is, send an alarm to notify
-// the operator
+// every hour or so
 func handleCloudwatchScheduledEvent(ctx context.Context, event events.CloudWatchEvent) error {
+	now := event.Time // not sure if this is worth it
+
+	if err := checkForUnAckedAlerts(now); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// check for old un-acked alerts and if there is, send an alarm to notify the operator
+func checkForUnAckedAlerts(now time.Time) error {
 	alerts, err := getAlerts()
 	if err != nil {
 		return err
 	}
 
 	oldAlertCount := 0
-
-	now := event.Time // not sure if this is worth it
 
 	for _, alert := range alerts {
 		if now.Sub(alert.Timestamp) > 4*time.Hour {
