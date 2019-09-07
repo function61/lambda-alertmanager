@@ -48,7 +48,8 @@ func handleRestCall(ctx context.Context, req events.APIGatewayProxyRequest) (*ev
 			return apigatewayutils.NoContent(), nil
 
 		}
-	case "GET /deadmanswitch/checkin": // /deadmanswitch/checkin?subject=ubackup_done&ttl=24h30m
+	case "GET /deadmansswitch/checkin": // /deadmansswitch/checkin?subject=ubackup_done&ttl=24h30m
+		// same semantic hack here as acknowledge endpoint
 		return handleDeadMansSwitchCheckin(ctx, req)
 	case "GET /deadmansswitches":
 		return handleGetDeadMansSwitches(ctx, req)
