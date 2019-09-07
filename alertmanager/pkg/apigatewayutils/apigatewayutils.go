@@ -64,3 +64,13 @@ func RespondJson(out interface{}) (*events.APIGatewayProxyResponse, error) {
 		Body: string(asJson),
 	}, nil
 }
+
+func OkText(msg string) (*events.APIGatewayProxyResponse, error) {
+	return &events.APIGatewayProxyResponse{
+		StatusCode: http.StatusOK,
+		Headers: map[string]string{
+			"Content-Type": "text/plain",
+		},
+		Body: string(msg),
+	}, nil
+}

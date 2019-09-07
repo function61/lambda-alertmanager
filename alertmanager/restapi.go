@@ -85,7 +85,7 @@ func handleAcknowledgeAlert(ctx context.Context, alertKey string) (*events.APIGa
 		}
 	}
 
-	return apigatewayutils.NoContent(), nil
+	return apigatewayutils.OkText(fmt.Sprintf("Ack ok for %s", alertKey))
 }
 
 func getAlerts() ([]alertmanagertypes.Alert, error) {
@@ -152,7 +152,7 @@ func handleDeadMansSwitchCheckin(ctx context.Context, req events.APIGatewayProxy
 		return apigatewayutils.InternalServerError(err.Error()), nil
 	}
 
-	return apigatewayutils.Created(), nil
+	return apigatewayutils.OkText("Check-in noted")
 }
 
 func getDeadMansSwitches() ([]alertmanagertypes.DeadMansSwitch, error) {
