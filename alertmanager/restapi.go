@@ -12,6 +12,7 @@ import (
 	"github.com/function61/lambda-alertmanager/alertmanager/pkg/apigatewayutils"
 	"os"
 	"sort"
+	"time"
 )
 
 func handleRestCall(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
@@ -47,6 +48,10 @@ func handleRestCall(ctx context.Context, req events.APIGatewayProxyRequest) (*ev
 			return apigatewayutils.NoContent(), nil
 
 		}
+	case "GET /deadmanswitch/checkin": // /deadmanswitch/checkin?subject=ubackup_done&ttl=24h30m
+		return handleDeadMansSwitchCheckin(ctx, req)
+	case "GET /deadmansswitches":
+		return handleGetDeadMansSwitches(ctx, req)
 	case "POST /prometheus-alertmanager/api/v1/alerts":
 		return apigatewayutils.InternalServerError("not implemented yet"), nil
 	default:
@@ -94,12 +99,12 @@ func getAlerts() ([]alertmanagertypes.Alert, error) {
 	alerts := []alertmanagertypes.Alert{}
 
 	for _, alertDb := range result.Items {
-		alert, err := deserializeAlertFromDynamoDb(alertDb)
-		if err != nil {
+		alert := alertmanagertypes.Alert{}
+		if err := unmarshalFromDynamoDb(alertDb, &alert); err != nil {
 			return nil, err
 		}
 
-		alerts = append(alerts, *alert)
+		alerts = append(alerts, alert)
 	}
 
 	sort.Slice(alerts, func(i, j int) bool {
@@ -107,6 +112,73 @@ func getAlerts() ([]alertmanagertypes.Alert, error) {
 	})
 
 	return alerts, nil
+}
+
+func handleGetDeadMansSwitches(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
+	switches, err := getDeadMansSwitches()
+	if err != nil {
+		return apigatewayutils.InternalServerError(err.Error()), nil
+	}
+
+	return apigatewayutils.RespondJson(switches)
+}
+
+func handleDeadMansSwitchCheckin(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
+	subject := req.QueryStringParameters["subject"]
+	ttlSpec := req.QueryStringParameters["ttl"]
+
+	if subject == "" || ttlSpec == "" {
+		return apigatewayutils.BadRequest("subject or ttl empty"), nil
+	}
+
+	ttl, err := parseTtlSpec(ttlSpec, time.Now())
+	if err != nil {
+		return apigatewayutils.BadRequest(err.Error()), nil
+	}
+
+	dynamoItem, err := marshalToDynamoDb(&alertmanagertypes.DeadMansSwitch{
+		Subject: subject,
+		TTL:     ttl,
+	})
+	if err != nil {
+		return apigatewayutils.InternalServerError(err.Error()), nil
+	}
+
+	if _, err := dynamodbSvc.PutItem(&dynamodb.PutItemInput{
+		TableName: dmsDynamoDbTableName,
+		Item:      dynamoItem,
+	}); err != nil {
+		return apigatewayutils.InternalServerError(err.Error()), nil
+	}
+
+	return apigatewayutils.Created(), nil
+}
+
+func getDeadMansSwitches() ([]alertmanagertypes.DeadMansSwitch, error) {
+	result, err := dynamodbSvc.Scan(&dynamodb.ScanInput{
+		TableName: dmsDynamoDbTableName,
+		Limit:     aws.Int64(1000), // whichever comes first, 1 MB or 1 000 records
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	switches := []alertmanagertypes.DeadMansSwitch{}
+
+	for _, items := range result.Items {
+		dms := alertmanagertypes.DeadMansSwitch{}
+		if err := unmarshalFromDynamoDb(items, &dms); err != nil {
+			return nil, err
+		}
+
+		switches = append(switches, dms)
+	}
+
+	sort.Slice(switches, func(i, j int) bool {
+		return switches[i].Subject < switches[j].Subject
+	})
+
+	return switches, nil
 }
 
 func ackLink(alert alertmanagertypes.Alert) string {

@@ -16,7 +16,7 @@
   version = "v1.10.0"
 
 [[projects]]
-  digest = "1:c9928518ea4aa133db6485d462cb1d0138180dc295c7e85ecfdc5024be610ad7"
+  digest = "1:58d6d853b57b46e412a61981232b87ee450019b8575146fa1cbaccd6ab51dd02"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -51,6 +51,7 @@
     "private/protocol/rest",
     "private/protocol/xml/xmlutil",
     "service/dynamodb",
+    "service/dynamodb/dynamodbattribute",
     "service/sns",
     "service/sts",
   ]
@@ -60,9 +61,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f1c266a9ecff710b8e1a9732e8b6497281dd4c666c9491c9a22ce1f60845cc84"
+  digest = "1:fce54f56e0c7519ea1cd77486600076c438aae285dc87a9af71121588b12a2ba"
   name = "github.com/function61/gokit"
-  packages = ["envvar"]
+  packages = [
+    "assert",
+    "envvar",
+  ]
   pruneopts = "UT"
   revision = "b30acd36f42adb55b113070ee29ce6fc06c9e861"
 
@@ -83,7 +87,9 @@
     "github.com/aws/aws-sdk-go/aws/awserr",
     "github.com/aws/aws-sdk-go/aws/session",
     "github.com/aws/aws-sdk-go/service/dynamodb",
+    "github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute",
     "github.com/aws/aws-sdk-go/service/sns",
+    "github.com/function61/gokit/assert",
     "github.com/function61/gokit/envvar",
   ]
   solver-name = "gps-cdcl"

@@ -17,6 +17,7 @@ var (
 	dynamodbSvc             = dynamodb.New(awsSession)
 	snsSvc                  = sns.New(awsSession)
 	alertsDynamoDbTableName = aws.String("alertmanager_alerts")
+	dmsDynamoDbTableName    = aws.String("alertmanager_deadmansswitches")
 )
 
 func main() {

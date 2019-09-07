@@ -83,13 +83,18 @@ func tryIngestAlertOnce(candidateAlert alertmanagertypes.Alert) (bool, error) {
 	// if you want to test ConditionalCheckFailedException, don't increment this
 	candidateAlert.Key = strconv.Itoa(largestNumber + 1)
 
+	dynamoItem, err := marshalToDynamoDb(&candidateAlert)
+	if err != nil {
+		return false, err
+	}
+
 	_, err = dynamodbSvc.PutItem(&dynamodb.PutItemInput{
 		// http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.SpecifyingConditions.html
 		ConditionExpression: aws.String("attribute_not_exists(alert_key)"),
 
 		TableName: alertsDynamoDbTableName,
 
-		Item: serializeAlertToDynamoDb(candidateAlert),
+		Item: dynamoItem,
 	})
 	if err != nil {
 		return false, err

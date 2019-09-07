@@ -18,6 +18,8 @@ lambda-alertmanager?
   until the issue is resolved, but of course you want to receive the alert only once.
 - Rate limiting: if shit hits the fan and your hundreds of alarms trigger all at once, you only get alerts
   for the first, say, 10 alarms. The rate limit is configurable.
+- Supports dead man's switches: a service has to periodically make a check-in. If the
+  check-ins stop coming, we raise an alert.
 
 
 Can send alerts to you (or many people) via:

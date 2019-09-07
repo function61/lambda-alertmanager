@@ -38,7 +38,7 @@ Content will be below, but you should copy it to a text editor first, and replac
                 "dynamodb:Scan"
             ],
             "Resource": [
-                "arn:aws:dynamodb:*:*:table/alertmanager_alerts"
+                "arn:aws:dynamodb:*:*:table/alertmanager_*"
             ]
     	},
     	{

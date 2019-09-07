@@ -29,12 +29,12 @@ func handleDynamoDbEvent(ctx context.Context, event events.DynamoDBEvent) error 
 		return nil
 	}
 
-	alert, err := deserializeAlertFromDynamoDb(dynamoEventImageToDynamoType(record.Change.NewImage))
-	if err != nil {
+	alert := alertmanagertypes.Alert{}
+	if err := unmarshalFromDynamoDb(dynamoEventImageToDynamoType(record.Change.NewImage), &alert); err != nil {
 		return err
 	}
 
-	return publishAlert(*alert)
+	return publishAlert(alert)
 }
 
 func publishAlert(alert alertmanagertypes.Alert) error {
