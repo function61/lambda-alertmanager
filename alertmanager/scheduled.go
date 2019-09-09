@@ -34,22 +34,27 @@ func checkForUnAckedAlerts(now time.Time) error {
 		return err
 	}
 
-	oldAlertCount := 0
+	oldAlertSubjects := []string{}
 
 	for _, alert := range alerts {
 		if now.Sub(alert.Timestamp) > 4*time.Hour {
-			oldAlertCount++
+			oldAlertSubjects = append(oldAlertSubjects, alert.Subject + " " + ackLink(alert))
 		}
 	}
 
-	if oldAlertCount > 0 {
+	if len(oldAlertSubjects) > 0 {
+		details := fmt.Sprintf(
+			"There are %d un-acked alert(s):\n\n%s\n\nGo take care of them!",
+			len(oldAlertSubjects),
+			strings.Join(oldAlertSubjects, "\n"))
+
 		// skip ingestion to bypass rate limiting (this scheduled function is not invoked
 		// too often) and deduplication. besides, we want to keep reminding the operator
 		// to take care of this situation
 		return publishAlert(alertmanagertypes.Alert{
 			Key:       "", // = not stored in the stateful store, comment above explains why
 			Subject:   "Un-acked alerts",
-			Details:   fmt.Sprintf("There are %d un-acked alert(s). Go take care of them!", oldAlertCount),
+			Details:   details,
 			Timestamp: now,
 		})
 	}
