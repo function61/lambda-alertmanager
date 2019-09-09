@@ -17,3 +17,15 @@ type DeadMansSwitch struct {
 	Subject string    `json:"subject"`
 	TTL     time.Time `json:"ttl"`
 }
+
+type DeadMansSwitchCheckinRequest struct {
+	Subject string `json:"subject"`
+	TTL     string `json:"ttl"`
+}
+
+func NewDeadMansSwitchCheckinRequest(subject string, ttl string) DeadMansSwitchCheckinRequest {
+	return DeadMansSwitchCheckinRequest{
+		Subject: subject,
+		TTL:     ttl,
+	}
+}

@@ -61,11 +61,13 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:fce54f56e0c7519ea1cd77486600076c438aae285dc87a9af71121588b12a2ba"
+  digest = "1:df8ccf421aeb01d104ed7df6d72441d274595d3728693f9c6a9bef98ef11be91"
   name = "github.com/function61/gokit"
   packages = [
     "assert",
+    "atomicfilewrite",
     "envvar",
+    "jsonfile",
   ]
   pruneopts = "UT"
   revision = "b30acd36f42adb55b113070ee29ce6fc06c9e861"
@@ -91,6 +93,7 @@
     "github.com/aws/aws-sdk-go/service/sns",
     "github.com/function61/gokit/assert",
     "github.com/function61/gokit/envvar",
+    "github.com/function61/gokit/jsonfile",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

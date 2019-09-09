@@ -1,13 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/function61/gokit/jsonfile"
 	"github.com/function61/lambda-alertmanager/alertmanager/pkg/alertmanagertypes"
 	"github.com/function61/lambda-alertmanager/alertmanager/pkg/apigatewayutils"
 	"os"
@@ -32,9 +33,8 @@ func handleRestCall(ctx context.Context, req events.APIGatewayProxyRequest) (*ev
 		return handleAcknowledgeAlert(ctx, key)
 	case "POST /alerts/ingest":
 		item := alertmanagertypes.Alert{}
-
-		if err := json.Unmarshal([]byte(req.Body), &item); err != nil {
-			return nil, err
+		if err := jsonfile.Unmarshal(bytes.NewBufferString(req.Body), &item, true); err != nil {
+			return apigatewayutils.BadRequest(err.Error()), nil
 		}
 
 		created, err := ingestAlert(item)
@@ -46,11 +46,18 @@ func handleRestCall(ctx context.Context, req events.APIGatewayProxyRequest) (*ev
 			return apigatewayutils.Created(), nil
 		} else {
 			return apigatewayutils.NoContent(), nil
-
 		}
 	case "GET /deadmansswitch/checkin": // /deadmansswitch/checkin?subject=ubackup_done&ttl=24h30m
 		// same semantic hack here as acknowledge endpoint
-		return handleDeadMansSwitchCheckin(ctx, req)
+		return handleDeadMansSwitchCheckin(req.QueryStringParameters["subject"], req.QueryStringParameters["ttl"])
+	case "POST /deadmansswitch/checkin": // {"subject":"ubackup_done","ttl":"24h30m"}
+		body := alertmanagertypes.DeadMansSwitchCheckinRequest{}
+
+		if err := jsonfile.Unmarshal(bytes.NewBufferString(req.Body), &body, true); err != nil {
+			return apigatewayutils.BadRequest(err.Error()), nil
+		}
+
+		return handleDeadMansSwitchCheckin(body.Subject, body.TTL)
 	case "GET /deadmansswitches":
 		return handleGetDeadMansSwitches(ctx, req)
 	case "POST /prometheus-alertmanager/api/v1/alerts":
@@ -124,10 +131,7 @@ func handleGetDeadMansSwitches(ctx context.Context, req events.APIGatewayProxyRe
 	return apigatewayutils.RespondJson(switches)
 }
 
-func handleDeadMansSwitchCheckin(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
-	subject := req.QueryStringParameters["subject"]
-	ttlSpec := req.QueryStringParameters["ttl"]
-
+func handleDeadMansSwitchCheckin(subject string, ttlSpec string) (*events.APIGatewayProxyResponse, error) {
 	if subject == "" || ttlSpec == "" {
 		return apigatewayutils.BadRequest("subject or ttl empty"), nil
 	}
