@@ -38,7 +38,7 @@ func checkForUnAckedAlerts(now time.Time) error {
 
 	for _, alert := range alerts {
 		if now.Sub(alert.Timestamp) > 4*time.Hour {
-			oldAlertSubjects = append(oldAlertSubjects, alert.Subject + " " + ackLink(alert))
+			oldAlertSubjects = append(oldAlertSubjects, alert.Subject+" "+ackLink(alert))
 		}
 	}
 
