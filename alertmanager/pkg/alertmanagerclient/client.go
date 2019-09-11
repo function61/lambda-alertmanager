@@ -15,6 +15,6 @@ func New(baseUrl string) *Client {
 }
 
 func (c *Client) DeadMansSwitchCheckin(ctx context.Context, req alertmanagertypes.DeadMansSwitchCheckinRequest) error {
-	_, err := ezhttp.Post(ctx, c.baseUrl+"/deadmansswitches/checkin", ezhttp.SendJson(&req))
+	_, err := ezhttp.Post(ctx, c.baseUrl+"/deadmansswitch/checkin", ezhttp.SendJson(&req))
 	return err
 }
