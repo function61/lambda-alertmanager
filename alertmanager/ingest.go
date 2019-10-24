@@ -54,7 +54,7 @@ func tryIngestAlertOnce(candidateAlert alertmanagertypes.Alert) (bool, error) {
 		return false, err
 	}
 
-	firingAlerts, err := getAlerts()
+	firingAlerts, err := getFiringAlerts()
 	if err != nil {
 		return false, err
 	}

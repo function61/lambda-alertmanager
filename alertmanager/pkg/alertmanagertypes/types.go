@@ -29,3 +29,7 @@ func NewDeadMansSwitchCheckinRequest(subject string, ttl string) DeadMansSwitchC
 		TTL:     ttl,
 	}
 }
+
+func (a *Alert) Equal(other Alert) bool {
+	return a.Subject == other.Subject
+}

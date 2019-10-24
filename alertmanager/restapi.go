@@ -49,7 +49,7 @@ func handleRestCall(ctx context.Context, req events.APIGatewayProxyRequest) (*ev
 		}
 	case "GET /deadmansswitch/checkin": // /deadmansswitch/checkin?subject=ubackup_done&ttl=24h30m
 		// same semantic hack here as acknowledge endpoint
-		return handleDeadMansSwitchCheckin(req.QueryStringParameters["subject"], req.QueryStringParameters["ttl"])
+		return handleDeadMansSwitchCheckin(ctx, req.QueryStringParameters["subject"], req.QueryStringParameters["ttl"])
 	case "POST /deadmansswitch/checkin": // {"subject":"ubackup_done","ttl":"24h30m"}
 		body := alertmanagertypes.DeadMansSwitchCheckinRequest{}
 
@@ -57,7 +57,7 @@ func handleRestCall(ctx context.Context, req events.APIGatewayProxyRequest) (*ev
 			return apigatewayutils.BadRequest(err.Error()), nil
 		}
 
-		return handleDeadMansSwitchCheckin(body.Subject, body.TTL)
+		return handleDeadMansSwitchCheckin(ctx, body.Subject, body.TTL)
 	case "GET /deadmansswitches":
 		return handleGetDeadMansSwitches(ctx, req)
 	case "POST /prometheus-alertmanager/api/v1/alerts":
@@ -68,7 +68,7 @@ func handleRestCall(ctx context.Context, req events.APIGatewayProxyRequest) (*ev
 }
 
 func handleGetAlerts(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
-	alerts, err := getAlerts()
+	alerts, err := getFiringAlerts()
 	if err != nil {
 		return apigatewayutils.InternalServerError(err.Error()), nil
 	}
@@ -95,7 +95,7 @@ func handleAcknowledgeAlert(ctx context.Context, alertKey string) (*events.APIGa
 	return apigatewayutils.OkText(fmt.Sprintf("Ack ok for %s", alertKey))
 }
 
-func getAlerts() ([]alertmanagertypes.Alert, error) {
+func getFiringAlerts() ([]alertmanagertypes.Alert, error) {
 	result, err := dynamodbSvc.Scan(&dynamodb.ScanInput{
 		TableName: alertsDynamoDbTableName,
 		Limit:     aws.Int64(1000), // whichever comes first, 1 MB or 1 000 records
@@ -131,7 +131,7 @@ func handleGetDeadMansSwitches(ctx context.Context, req events.APIGatewayProxyRe
 	return apigatewayutils.RespondJson(switches)
 }
 
-func handleDeadMansSwitchCheckin(subject string, ttlSpec string) (*events.APIGatewayProxyResponse, error) {
+func handleDeadMansSwitchCheckin(ctx context.Context, subject string, ttlSpec string) (*events.APIGatewayProxyResponse, error) {
 	if subject == "" || ttlSpec == "" {
 		return apigatewayutils.BadRequest("subject or ttl empty"), nil
 	}
@@ -141,10 +141,12 @@ func handleDeadMansSwitchCheckin(subject string, ttlSpec string) (*events.APIGat
 		return apigatewayutils.BadRequest(err.Error()), nil
 	}
 
-	dynamoItem, err := marshalToDynamoDb(&alertmanagertypes.DeadMansSwitch{
+	deadMansSwitch := alertmanagertypes.DeadMansSwitch{
 		Subject: subject,
 		TTL:     ttl,
-	})
+	}
+
+	dynamoItem, err := marshalToDynamoDb(&deadMansSwitch)
 	if err != nil {
 		return apigatewayutils.InternalServerError(err.Error()), nil
 	}
@@ -156,7 +158,30 @@ func handleDeadMansSwitchCheckin(subject string, ttlSpec string) (*events.APIGat
 		return apigatewayutils.InternalServerError(err.Error()), nil
 	}
 
-	return apigatewayutils.OkText("Check-in noted")
+	alerts, err := getFiringAlerts()
+	if err != nil {
+		return apigatewayutils.InternalServerError(err.Error()), nil
+	}
+
+	var alertFiringFromDeadMansSwitch *alertmanagertypes.Alert
+	for _, alert := range alerts {
+		// what this switch would be as an alert? to see if this switch is currently firing,
+		// so we can auto-ack it
+		if alert.Equal(alertFromDeadMansSwitch(deadMansSwitch, alert.Timestamp)) {
+			alertFiringFromDeadMansSwitch = &alert
+			break
+		}
+	}
+
+	if alertFiringFromDeadMansSwitch == nil {
+		return apigatewayutils.OkText("Check-in noted")
+	} else {
+		if _, err := handleAcknowledgeAlert(ctx, alertFiringFromDeadMansSwitch.Subject); err != nil {
+			return apigatewayutils.InternalServerError(err.Error()), nil
+		}
+
+		return apigatewayutils.OkText("Check-in noted; alert that was firing for this dead mans's switch was acked")
+	}
 }
 
 func getDeadMansSwitches() ([]alertmanagertypes.DeadMansSwitch, error) {

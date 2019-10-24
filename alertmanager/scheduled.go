@@ -29,14 +29,14 @@ func handleCloudwatchScheduledEvent(ctx context.Context, event events.CloudWatch
 
 // check for old un-acked alerts and if there is, send an alarm to notify the operator
 func checkForUnAckedAlerts(now time.Time) error {
-	alerts, err := getAlerts()
+	firingAlerts, err := getFiringAlerts()
 	if err != nil {
 		return err
 	}
 
 	oldAlertSubjects := []string{}
 
-	for _, alert := range alerts {
+	for _, alert := range firingAlerts {
 		if now.Sub(alert.Timestamp) > 4*time.Hour {
 			oldAlertSubjects = append(oldAlertSubjects, alert.Subject+" "+ackLink(alert))
 		}
@@ -75,18 +75,20 @@ func checkForDeadMansSwitches(now time.Time) error {
 	}
 
 	for _, overdueSwitch := range overdue {
-		alert := alertmanagertypes.Alert{
-			Subject:   overdueSwitch.Subject,
-			Timestamp: now,
-			Details:   fmt.Sprintf("Check-in late by %s (%s)", now.Sub(overdueSwitch.TTL), overdueSwitch.TTL.Format(time.RFC3339Nano)),
-		}
-
-		if _, err := ingestAlert(alert); err != nil {
+		if _, err := ingestAlert(alertFromDeadMansSwitch(overdueSwitch, now)); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func alertFromDeadMansSwitch(deadMansSwitch alertmanagertypes.DeadMansSwitch, now time.Time) alertmanagertypes.Alert {
+	return alertmanagertypes.Alert{
+		Subject:   deadMansSwitch.Subject,
+		Timestamp: now,
+		Details:   fmt.Sprintf("Check-in late by %s (%s)", now.Sub(deadMansSwitch.TTL), deadMansSwitch.TTL.Format(time.RFC3339Nano)),
+	}
 }
 
 func getOverdueSwitches(switches []alertmanagertypes.DeadMansSwitch, now time.Time) []alertmanagertypes.DeadMansSwitch {
