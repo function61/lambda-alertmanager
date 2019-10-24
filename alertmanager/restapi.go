@@ -11,6 +11,7 @@ import (
 	"github.com/function61/gokit/jsonfile"
 	"github.com/function61/lambda-alertmanager/alertmanager/pkg/alertmanagertypes"
 	"github.com/function61/lambda-alertmanager/alertmanager/pkg/apigatewayutils"
+	"net/http"
 	"os"
 	"sort"
 	"time"
@@ -176,8 +177,8 @@ func handleDeadMansSwitchCheckin(ctx context.Context, subject string, ttlSpec st
 	if alertFiringFromDeadMansSwitch == nil {
 		return apigatewayutils.OkText("Check-in noted")
 	} else {
-		if _, err := handleAcknowledgeAlert(ctx, alertFiringFromDeadMansSwitch.Subject); err != nil {
-			return apigatewayutils.InternalServerError(err.Error()), nil
+		if ackRes, err := handleAcknowledgeAlert(ctx, alertFiringFromDeadMansSwitch.Key); err != nil || (ackRes != nil && ackRes.StatusCode != http.StatusOK) {
+			return ackRes, err
 		}
 
 		return apigatewayutils.OkText("Check-in noted; alert that was firing for this dead mans's switch was acked")
