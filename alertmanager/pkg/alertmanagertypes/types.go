@@ -1,6 +1,7 @@
 package alertmanagertypes
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -13,14 +14,35 @@ type Alert struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
+func (a *Alert) Equal(other Alert) bool {
+	return a.Subject == other.Subject
+}
+
 type DeadMansSwitch struct {
 	Subject string    `json:"subject"`
 	TTL     time.Time `json:"ttl"`
 }
 
+func (d *DeadMansSwitch) AsAlert(now time.Time) Alert {
+	return Alert{
+		Subject:   d.Subject,
+		Timestamp: now,
+		Details:   fmt.Sprintf("Check-in late by %s (%s)", now.Sub(d.TTL), d.TTL.Format(time.RFC3339Nano)),
+	}
+}
+
+// otherwise the same but TTL in un-expanded form
 type DeadMansSwitchCheckinRequest struct {
 	Subject string `json:"subject"`
 	TTL     string `json:"ttl"`
+}
+
+func (d *DeadMansSwitchCheckinRequest) AsAlert(details string) Alert {
+	return Alert{
+		Subject:   d.Subject,
+		Details:   details,
+		Timestamp: time.Now(),
+	}
 }
 
 func NewDeadMansSwitchCheckinRequest(subject string, ttl string) DeadMansSwitchCheckinRequest {
@@ -28,8 +50,4 @@ func NewDeadMansSwitchCheckinRequest(subject string, ttl string) DeadMansSwitchC
 		Subject: subject,
 		TTL:     ttl,
 	}
-}
-
-func (a *Alert) Equal(other Alert) bool {
-	return a.Subject == other.Subject
 }

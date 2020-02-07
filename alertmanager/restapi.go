@@ -50,15 +50,17 @@ func handleRestCall(ctx context.Context, req events.APIGatewayProxyRequest) (*ev
 		}
 	case "GET /deadmansswitch/checkin": // /deadmansswitch/checkin?subject=ubackup_done&ttl=24h30m
 		// same semantic hack here as acknowledge endpoint
-		return handleDeadMansSwitchCheckin(ctx, req.QueryStringParameters["subject"], req.QueryStringParameters["ttl"])
+		return handleDeadMansSwitchCheckin(ctx, alertmanagertypes.DeadMansSwitchCheckinRequest{
+			Subject: req.QueryStringParameters["subject"],
+			TTL:     req.QueryStringParameters["ttl"],
+		})
 	case "POST /deadmansswitch/checkin": // {"subject":"ubackup_done","ttl":"24h30m"}
-		body := alertmanagertypes.DeadMansSwitchCheckinRequest{}
-
-		if err := jsonfile.Unmarshal(bytes.NewBufferString(req.Body), &body, true); err != nil {
+		checkin := alertmanagertypes.DeadMansSwitchCheckinRequest{}
+		if err := jsonfile.Unmarshal(bytes.NewBufferString(req.Body), &checkin, true); err != nil {
 			return apigatewayutils.BadRequest(err.Error()), nil
 		}
 
-		return handleDeadMansSwitchCheckin(ctx, body.Subject, body.TTL)
+		return handleDeadMansSwitchCheckin(ctx, checkin)
 	case "GET /deadmansswitches":
 		return handleGetDeadMansSwitches(ctx, req)
 	case "POST /prometheus-alertmanager/api/v1/alerts":
@@ -132,18 +134,20 @@ func handleGetDeadMansSwitches(ctx context.Context, req events.APIGatewayProxyRe
 	return apigatewayutils.RespondJson(switches)
 }
 
-func handleDeadMansSwitchCheckin(ctx context.Context, subject string, ttlSpec string) (*events.APIGatewayProxyResponse, error) {
-	if subject == "" || ttlSpec == "" {
+func handleDeadMansSwitchCheckin(ctx context.Context, raw alertmanagertypes.DeadMansSwitchCheckinRequest) (*events.APIGatewayProxyResponse, error) {
+	if raw.Subject == "" || raw.TTL == "" {
 		return apigatewayutils.BadRequest("subject or ttl empty"), nil
 	}
 
-	ttl, err := parseTtlSpec(ttlSpec, time.Now())
+	now := time.Now()
+
+	ttl, err := parseTtlSpec(raw.TTL, now)
 	if err != nil {
 		return apigatewayutils.BadRequest(err.Error()), nil
 	}
 
 	deadMansSwitch := alertmanagertypes.DeadMansSwitch{
-		Subject: subject,
+		Subject: raw.Subject,
 		TTL:     ttl,
 	}
 
@@ -164,11 +168,12 @@ func handleDeadMansSwitchCheckin(ctx context.Context, subject string, ttlSpec st
 		return apigatewayutils.InternalServerError(err.Error()), nil
 	}
 
+	comparableAlert := deadMansSwitch.AsAlert(now)
 	var alertFiringFromDeadMansSwitch *alertmanagertypes.Alert
 	for _, alert := range alerts {
 		// what this switch would be as an alert? to see if this switch is currently firing,
 		// so we can auto-ack it
-		if alert.Equal(alertFromDeadMansSwitch(deadMansSwitch, alert.Timestamp)) {
+		if alert.Equal(comparableAlert) {
 			alertFiringFromDeadMansSwitch = &alert
 			break
 		}

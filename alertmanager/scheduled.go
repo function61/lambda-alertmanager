@@ -75,20 +75,12 @@ func checkForDeadMansSwitches(now time.Time) error {
 	}
 
 	for _, overdueSwitch := range overdue {
-		if _, err := ingestAlert(alertFromDeadMansSwitch(overdueSwitch, now)); err != nil {
+		if _, err := ingestAlert(overdueSwitch.AsAlert(now)); err != nil {
 			return err
 		}
 	}
 
 	return nil
-}
-
-func alertFromDeadMansSwitch(deadMansSwitch alertmanagertypes.DeadMansSwitch, now time.Time) alertmanagertypes.Alert {
-	return alertmanagertypes.Alert{
-		Subject:   deadMansSwitch.Subject,
-		Timestamp: now,
-		Details:   fmt.Sprintf("Check-in late by %s (%s)", now.Sub(deadMansSwitch.TTL), deadMansSwitch.TTL.Format(time.RFC3339Nano)),
-	}
 }
 
 func getOverdueSwitches(switches []alertmanagertypes.DeadMansSwitch, now time.Time) []alertmanagertypes.DeadMansSwitch {
