@@ -9,9 +9,17 @@ type Alert struct {
 	// will be filled at ingestion time with sequential number: 1, 2, 3, ...
 	// this is to implement race condition -free rate limiting by utilizing unique column constraint on save
 	Key       string    `json:"alert_key"`
-	Subject   string    `json:"subject"`
+	Subject   string    `json:"subject"` // same type of error should always have same subject
 	Details   string    `json:"details"`
 	Timestamp time.Time `json:"timestamp"`
+}
+
+func NewAlert(subject string, details string) Alert {
+	return Alert{
+		Subject:   subject,
+		Details:   details,
+		Timestamp: time.Now(),
+	}
 }
 
 func (a *Alert) Equal(other Alert) bool {
