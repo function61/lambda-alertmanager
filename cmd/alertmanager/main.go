@@ -11,10 +11,18 @@ import (
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
 	"github.com/spf13/cobra"
 	"os"
+	"strings"
 	"time"
 )
 
 func main() {
+	// AWS Lambda doesn't support giving argv, so we use an ugly hack to detect when
+	// we're in Lambda
+	if strings.Contains(os.Args[0], "_lambda") {
+		lambdaHandler()
+		return
+	}
+
 	app := &cobra.Command{
 		Use:     os.Args[0],
 		Short:   "Alert manager",
@@ -30,17 +38,8 @@ func main() {
 	app.AddCommand(ehcli.Entrypoint())
 
 	app.AddCommand(&cobra.Command{
-		Use:    "lambda",
-		Hidden: true,
-		Run: func(*cobra.Command, []string) {
-			lambdaHandler()
-		},
-	})
-
-	app.AddCommand(&cobra.Command{
-		Use:    "lambda-scheduler",
-		Short:  "Run what Lambda would invoke in response to scheduler event",
-		Hidden: true,
+		Use:   "lambda-scheduler",
+		Short: "Run what Lambda would invoke in response to scheduler event",
 		Run: func(*cobra.Command, []string) {
 			exitIfError(handleCloudwatchScheduledEvent(
 				ossignal.InterruptOrTerminateBackgroundCtx(nil),

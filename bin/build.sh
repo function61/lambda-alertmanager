@@ -11,10 +11,10 @@ GOFMT_TARGETS="cmd/ pkg/"
 # TODO: one deployerspec is done, we can stop overriding this from base image
 function packageLambdaFunction {
 	cd rel/
-	cp "${BINARY_NAME}_linux-amd64" "${BINARY_NAME}"
+	cp "${BINARY_NAME}_linux-amd64" "${BINARY_NAME}_lambda"
 	rm -f lambdafunc.zip
-	zip lambdafunc.zip "${BINARY_NAME}"
-	rm "${BINARY_NAME}"
+	zip lambdafunc.zip "${BINARY_NAME}_lambda"
+	rm "${BINARY_NAME}_lambda"
 }
 
 standardBuildProcess
