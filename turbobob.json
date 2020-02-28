@@ -4,21 +4,11 @@
 	"project_name": "lambda-alertmanager",
 	"builders": [
 		{
-			"name": "alertmanager",
-			"uses": "docker://fn61/buildkit-golang:20190514_1436_703044aa",
+			"name": "default",
+			"uses": "docker://fn61/buildkit-golang:20200212_0907_06f93bc3",
 			"mount_source": "",
-			"mount_destination": "/go/src/github.com/function61/lambda-alertmanager",
-			"workdir": "/go/src/github.com/function61/lambda-alertmanager",
-			"commands": {
-				"build": ["bin/build.sh"],
-				"dev": ["bash"]
-			}
-		},
-		{
-			"name": "alertmanager-canary",
-			"uses": "docker://fn61/buildkit-js:20190412_1139_7d7cd1b0",
 			"mount_destination": "/workspace",
-			"workdir": "/workspace/alertmanager-canary",
+			"workdir": "/workspace",
 			"commands": {
 				"build": ["bin/build.sh"],
 				"dev": ["bash"]

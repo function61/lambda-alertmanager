@@ -3,7 +3,7 @@ package alertmanagerclient
 import (
 	"context"
 	"github.com/function61/gokit/ezhttp"
-	"github.com/function61/lambda-alertmanager/alertmanager/pkg/alertmanagertypes"
+	"github.com/function61/lambda-alertmanager/pkg/alertmanagertypes"
 )
 
 type Client struct {

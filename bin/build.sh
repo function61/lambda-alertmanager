@@ -3,10 +3,10 @@
 source /build-common.sh
 
 BINARY_NAME="alertmanager"
-COMPILE_IN_DIRECTORY="alertmanager"
+COMPILE_IN_DIRECTORY="cmd/alertmanager"
 
 # aws has non-gofmt code..
-GOFMT_TARGETS="alertmanager/"
+GOFMT_TARGETS="cmd/ pkg/"
 
 function packageLambdaFunction {
 	cd rel/
