@@ -6,8 +6,6 @@ import (
 )
 
 type Alert struct {
-	// will be filled at ingestion time with sequential number: 1, 2, 3, ...
-	// this is to implement race condition -free rate limiting by utilizing unique column constraint on save
 	Key       string    `json:"alert_key"`
 	Subject   string    `json:"subject"` // same type of error should always have same subject
 	Details   string    `json:"details"`
