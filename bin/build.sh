@@ -8,12 +8,13 @@ COMPILE_IN_DIRECTORY="cmd/alertmanager"
 # aws has non-gofmt code..
 GOFMT_TARGETS="cmd/ pkg/"
 
+# TODO: one deployerspec is done, we can stop overriding this from base image
 function packageLambdaFunction {
 	cd rel/
-	mv "${BINARY_NAME}_linux-amd64" "${BINARY_NAME}"
-	rm -f alertmanager.zip
-	# FIXME: zip is missing from image
-	zip alertmanager.zip "${BINARY_NAME}"
+	cp "${BINARY_NAME}_linux-amd64" "${BINARY_NAME}"
+	rm -f lambdafunc.zip
+	zip lambdafunc.zip "${BINARY_NAME}"
+	rm "${BINARY_NAME}"
 }
 
 standardBuildProcess
