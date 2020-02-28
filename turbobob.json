@@ -16,7 +16,7 @@
 		},
 		{
 			"name": "publisher",
-			"uses": "docker://fn61/buildkit-publisher:20200221_1859_befcec04",
+			"uses": "docker://fn61/buildkit-publisher:20200228_1710_dece7b49",
 			"mount_destination": "/workspace",
 			"commands": {
 				"publish": ["publish-gh.sh", "function61/lambda-alertmanager", "rel/"],
