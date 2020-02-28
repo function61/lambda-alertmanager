@@ -62,7 +62,6 @@ func (s *Store) Snapshot() (*ehreader.Snapshot, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// return nil, errors.New("not implemented")
 	data, err := json.MarshalIndent(s.state, "", "\t")
 	if err != nil {
 		return nil, err
