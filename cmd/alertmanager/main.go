@@ -42,9 +42,9 @@ func main() {
 		Short:  "Run what Lambda would invoke in response to scheduler event",
 		Hidden: true,
 		Run: func(*cobra.Command, []string) {
-			handleCloudwatchScheduledEvent(
+			exitIfError(handleCloudwatchScheduledEvent(
 				ossignal.InterruptOrTerminateBackgroundCtx(nil),
-				time.Now())
+				time.Now()))
 		},
 	})
 

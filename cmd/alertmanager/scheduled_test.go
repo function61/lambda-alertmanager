@@ -49,6 +49,7 @@ func TestParseTtlSpec(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
+		tc := tc // pin
 		t.Run(tc.input, func(t *testing.T) {
 			ttl, err := parseTtlSpec(tc.input, now)
 			var actual string
