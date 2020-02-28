@@ -1,8 +1,15 @@
 ![Build](https://github.com/function61/lambda-alertmanager/workflows/Build/badge.svg)
-[![Download](https://img.shields.io/bintray/v/function61/dl/lambda-alertmanager.svg?style=for-the-badge&label=Download)](https://bintray.com/function61/dl/lambda-alertmanager/_latestVersion#files)
 
 
 **NOTE: some documentation outdated, since there was a major refactoring**
+
+Requires these ENV vars:
+
+- `ALERT_TOPIC`=arn:aws:sns:us-east-1:123456789012:AlertManager-alert
+- `API_ENDPOINT`=https://foobar.execute-api.us-east-1.amazonaws.com/prod
+- `AWS_ACCESS_KEY_ID`=AKIA...
+- `AWS_SECRET_ACCESS_KEY`=brKsU...
+- `EVENTHORIZON`=prod:1:::eu-central-1
 
 
 lambda-alertmanager?
