@@ -51,13 +51,19 @@ func deadMansSwitchEntry() *cobra.Command {
 		Short: "Make a checkin",
 		Args:  cobra.ExactArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {
+			ctx := ossignal.InterruptOrTerminateBackgroundCtx(nil)
+
 			ttl, err := parseTtlSpec(args[1], time.Now())
 			exitIfError(err)
 
+			app, err := getApp(ctx)
+			exitIfError(err)
+
 			_, err = deadmansswitchCheckin(
-				ossignal.InterruptOrTerminateBackgroundCtx(nil),
+				ctx,
 				args[0],
-				ttl)
+				ttl,
+				app)
 			exitIfError(err)
 		},
 	})
@@ -105,12 +111,12 @@ func deadmansswitchRemove(ctx context.Context, subject string) error {
 	})
 }
 
-func deadmansswitchCheckin(ctx context.Context, subject string, ttl time.Time) (bool, error) {
-	app, err := getApp(ctx)
-	if err != nil {
-		return false, err
-	}
-
+func deadmansswitchCheckin(
+	ctx context.Context,
+	subject string,
+	ttl time.Time,
+	app *amstate.App,
+) (bool, error) {
 	now := time.Now()
 
 	alertAcked := false

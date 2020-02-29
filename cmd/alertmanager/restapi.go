@@ -76,7 +76,7 @@ func newRestApi(ctx context.Context) http.Handler {
 		handleDeadMansSwitchCheckin(w, r, alertmanagertypes.DeadMansSwitchCheckinRequest{
 			Subject: r.URL.Query().Get("subject"),
 			TTL:     r.URL.Query().Get("ttl"),
-		})
+		}, app)
 	})
 
 	mux.POST.HandleFunc("/deadmansswitch/checkin", func(w http.ResponseWriter, r *http.Request) {
@@ -87,7 +87,7 @@ func newRestApi(ctx context.Context) http.Handler {
 		}
 
 		// handles validation
-		handleDeadMansSwitchCheckin(w, r, checkin)
+		handleDeadMansSwitchCheckin(w, r, checkin, app)
 	})
 
 	mux.POST.HandleFunc("/prometheus-alertmanager/api/v1/alerts", func(w http.ResponseWriter, r *http.Request) {
@@ -97,11 +97,12 @@ func newRestApi(ctx context.Context) http.Handler {
 	return mux
 }
 
- func handleDeadMansSwitchCheckin(
- 	w http.ResponseWriter,
- 	r *http.Request,
- 	raw alertmanagertypes.DeadMansSwitchCheckinRequest,
- ) {
+func handleDeadMansSwitchCheckin(
+	w http.ResponseWriter,
+	r *http.Request,
+	raw alertmanagertypes.DeadMansSwitchCheckinRequest,
+	app *amstate.App,
+) {
 	if raw.Subject == "" || raw.TTL == "" {
 		http.Error(w, "subject or ttl empty", http.StatusBadRequest)
 		return
@@ -115,7 +116,7 @@ func newRestApi(ctx context.Context) http.Handler {
 		return
 	}
 
-	alertAcked, err := deadmansswitchCheckin(r.Context(), raw.Subject, ttl)
+	alertAcked, err := deadmansswitchCheckin(r.Context(), raw.Subject, ttl, app)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
