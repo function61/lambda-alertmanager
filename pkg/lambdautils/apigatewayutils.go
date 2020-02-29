@@ -1,4 +1,4 @@
-package apigatewayutils
+package lambdautils
 
 import (
 	"encoding/json"

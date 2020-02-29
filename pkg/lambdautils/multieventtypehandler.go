@@ -1,4 +1,4 @@
-package main
+package lambdautils
 
 // This design is not pretty.. https://stackoverflow.com/a/52572943
 
@@ -8,7 +8,28 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
 )
+
+type multiEventTypeHandlerFn func(ctx context.Context, polymorphicEvent interface{}) ([]byte, error)
+
+type multiEventTypeHandler struct {
+	fn multiEventTypeHandlerFn
+}
+
+func NewMultiEventTypeHandler(fn multiEventTypeHandlerFn) lambda.Handler {
+	return &multiEventTypeHandler{fn}
+}
+
+func (m *multiEventTypeHandler) Invoke(ctx context.Context, reqRaw []byte) ([]byte, error) {
+	probe := &eventTypeProbe{}
+	polymorphicEvent, err := probe.IdentifyAndUnmarshal(reqRaw)
+	if err != nil {
+		return nil, err
+	}
+
+	return m.fn(ctx, polymorphicEvent)
+}
 
 // we introduce just enough fields to determine what type of trigger this is, so we can
 // deserialize JSON with proper type
@@ -62,18 +83,4 @@ func (e *eventTypeProbe) IdentifyAndUnmarshal(reqRaw []byte) (interface{}, error
 	}
 
 	return typeOfRequest, nil
-}
-
-type multiLambdaEventTypeDispatcher struct {
-	fn func(ctx context.Context, polymorphicEvent interface{}) ([]byte, error)
-}
-
-func (h multiLambdaEventTypeDispatcher) Invoke(ctx context.Context, reqRaw []byte) ([]byte, error) {
-	probe := &eventTypeProbe{}
-	polymorphicEvent, err := probe.IdentifyAndUnmarshal(reqRaw)
-	if err != nil {
-		return nil, err
-	}
-
-	return h.fn(ctx, polymorphicEvent)
 }
