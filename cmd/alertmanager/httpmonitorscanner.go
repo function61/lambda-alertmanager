@@ -19,16 +19,7 @@ type monitorFailure struct {
 	monitor amstate.HttpMonitor
 }
 
-func httpMonitorScanAndAlertFailures(ctx context.Context) error {
-	app, err := getApp(ctx)
-	if err != nil {
-		return err
-	}
-
-	return httpMonitorScanAndAlertFailuresWithApp(ctx, app)
-}
-
-func httpMonitorScanAndAlertFailuresWithApp(ctx context.Context, app *amstate.App) error {
+func httpMonitorScanAndAlertFailures(ctx context.Context, app *amstate.App) error {
 	startOfScan := time.Now()
 
 	failures := scanMonitors(

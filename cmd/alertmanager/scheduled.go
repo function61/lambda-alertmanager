@@ -28,7 +28,7 @@ func handleCloudwatchScheduledEvent(ctx context.Context, now time.Time) error {
 		return err
 	}
 
-	if err := httpMonitorScanAndAlertFailuresWithApp(ctx, app); err != nil {
+	if err := httpMonitorScanAndAlertFailures(ctx, app); err != nil {
 		return err
 	}
 

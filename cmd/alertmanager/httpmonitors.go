@@ -81,8 +81,12 @@ func httpMonitorEntry() *cobra.Command {
 		Short: "Runs all enabled monitors and raises alerts if appropriate",
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			exitIfError(httpMonitorScanAndAlertFailures(
-				ossignal.InterruptOrTerminateBackgroundCtx(nil)))
+			ctx := ossignal.InterruptOrTerminateBackgroundCtx(nil)
+
+			app, err := getApp(ctx)
+			exitIfError(err)
+
+			exitIfError(httpMonitorScanAndAlertFailures(ctx, app))
 		},
 	})
 
