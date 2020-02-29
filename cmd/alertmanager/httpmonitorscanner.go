@@ -25,7 +25,8 @@ func httpMonitorScanAndAlertFailures(ctx context.Context, app *amstate.App) erro
 	failures := scanMonitors(
 		ctx,
 		app.State.HttpMonitors(),
-		newScanner(logex.Prefix("httpscanner", app.Logger)))
+		newScanner(),
+		logex.Prefix("httpscanner", app.Logger))
 
 	// convert monitor failures into alerts
 	alerts := []amstate.Alert{}
@@ -47,7 +48,10 @@ func scanMonitors(
 	ctx context.Context,
 	monitors []amstate.HttpMonitor,
 	scanner HttpMonitorScanner,
+	logger *log.Logger,
 ) []monitorFailure {
+	logl := logex.Levels(logger)
+
 	failed := []monitorFailure{}
 	failedMu := sync.Mutex{}
 
@@ -55,7 +59,13 @@ func scanMonitors(
 		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 
-		if err := scanner.Scan(ctx, monitor); err != nil {
+		started := time.Now()
+
+		err := scanner.Scan(ctx, monitor)
+
+		durationMs := time.Since(started).Milliseconds()
+
+		if err != nil {
 			failedMu.Lock()
 			defer failedMu.Unlock()
 
@@ -63,6 +73,10 @@ func scanMonitors(
 				err,
 				monitor,
 			})
+
+			logl.Error.Printf("❌ %s @ %d ms => %v", monitor.Url, durationMs, err.Error())
+		} else {
+			logl.Debug.Printf("✔️ %s @ %d ms", monitor.Url, durationMs)
 		}
 	}
 
@@ -88,13 +102,11 @@ type HttpMonitorScanner interface {
 }
 
 type scanner struct {
-	logl        *logex.Leveled
 	noRedirects *http.Client
 }
 
-func newScanner(logger *log.Logger) HttpMonitorScanner {
+func newScanner() HttpMonitorScanner {
 	return &scanner{
-		logex.Levels(logger),
 		&http.Client{
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				return http.ErrUseLastResponse // do not follow redirects
@@ -104,22 +116,6 @@ func newScanner(logger *log.Logger) HttpMonitorScanner {
 }
 
 func (s *scanner) Scan(ctx context.Context, monitor amstate.HttpMonitor) error {
-	started := time.Now()
-
-	err := s.scanInternal(ctx, monitor)
-
-	durationMs := time.Since(started).Milliseconds()
-
-	if err != nil {
-		s.logl.Error.Printf("❌ %s @ %d ms => %v", monitor.Url, durationMs, err.Error())
-	} else {
-		s.logl.Debug.Printf("✔️ %s @ %d ms", monitor.Url, durationMs)
-	}
-
-	return err
-}
-
-func (s *scanner) scanInternal(ctx context.Context, monitor amstate.HttpMonitor) error {
 	resp, err := ezhttp.Get(
 		ctx,
 		monitor.Url,

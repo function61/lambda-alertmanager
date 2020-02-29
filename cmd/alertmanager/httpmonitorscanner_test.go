@@ -18,7 +18,7 @@ func TestOneFails(t *testing.T) {
 			Url:  "http://example.com/contacts",
 			Find: "bar@exmaple.com",
 		},
-	}, &testScanner{})
+	}, &testScanner{}, nil)
 
 	assert.Assert(t, len(failures) == 1)
 	assert.EqualString(
@@ -37,7 +37,7 @@ func TestAllSucceed(t *testing.T) {
 			Url:  "http://example.com/contacts",
 			Find: "foo@example.com",
 		},
-	}, &testScanner{})
+	}, &testScanner{}, nil)
 
 	assert.Assert(t, len(failures) == 0)
 }
@@ -48,7 +48,7 @@ func Test404(t *testing.T) {
 			Url:  "http://notfound.net/",
 			Find: "doesntmatter",
 		},
-	}, &testScanner{})
+	}, &testScanner{}, nil)
 
 	assert.Assert(t, len(failures) == 1)
 	assert.EqualString(t, failures[0].err.Error(), "404: http://notfound.net/")
