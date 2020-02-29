@@ -1,122 +1,171 @@
 package main
 
 import (
-	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-lambda-go/events"
+	"github.com/function61/gokit/httputils"
 	"github.com/function61/gokit/jsonfile"
+	"github.com/function61/gokit/logex"
+	"github.com/function61/gokit/ossignal"
+	"github.com/function61/gokit/taskrunner"
 	"github.com/function61/lambda-alertmanager/pkg/alertmanagertypes"
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
-	"github.com/function61/lambda-alertmanager/pkg/lambdautils"
+	"github.com/spf13/cobra"
+	"log"
+	"net/http"
 	"os"
 	"time"
 )
 
-func handleRestCall(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
+func newRestApi(ctx context.Context) http.Handler {
 	app, err := getApp(ctx)
 	if err != nil {
-		return lambdautils.InternalServerError(err.Error()), nil
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		})
 	}
 
-	synopsis := req.HTTPMethod + " " + req.Path
+	mux := httputils.NewMethodMux()
 
-	switch synopsis {
-	case "GET /alerts":
-		return handleGetAlerts(ctx, req, app)
-	case "GET /alerts/acknowledge":
-		// this endpoint should really be a POST (since it mutates state), but we've to be
-		// pragmatic here because we want acks to be ack-able from emails
-		id := req.QueryStringParameters["id"]
-		if id == "" {
-			return lambdautils.BadRequest("id not specified"), nil
-		}
+	mux.GET.HandleFunc("/alerts", func(w http.ResponseWriter, r *http.Request) {
+		handleJsonOutput(w, app.State.ActiveAlerts())
+	})
 
-		return handleAcknowledgeAlert(ctx, id)
-	case "POST /alerts/ingest":
+	mux.POST.HandleFunc("/alerts/ingest", func(w http.ResponseWriter, r *http.Request) {
 		alert := amstate.Alert{}
-		if err := jsonfile.Unmarshal(bytes.NewBufferString(req.Body), &alert, true); err != nil {
-			return lambdautils.BadRequest(err.Error()), nil
+		if err := jsonfile.Unmarshal(r.Body, &alert, true); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
-		alert.Id = amstate.NewAlertId()
+		alert.Id = amstate.NewAlertId() // FIXME: bad design
 
-		created, err := ingestAlertsAndReturnCreatedFlag(ctx, []amstate.Alert{alert}, app)
+		created, err := ingestAlertsAndReturnCreatedFlag(r.Context(), []amstate.Alert{alert}, app)
 		if err != nil {
-			return lambdautils.InternalServerError(err.Error()), nil
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		if created {
-			return lambdautils.Created(), nil
+			w.WriteHeader(http.StatusCreated)
 		} else {
-			return lambdautils.NoContent(), nil
+			w.WriteHeader(http.StatusNoContent)
 		}
-	case "GET /deadmansswitch/checkin": // /deadmansswitch/checkin?subject=ubackup_done&ttl=24h30m
+	})
+
+	mux.GET.HandleFunc("/alerts/acknowledge", func(w http.ResponseWriter, r *http.Request) {
+		id := r.URL.Query().Get("id")
+
+		if err := alertAck(r.Context(), id); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		fmt.Fprintf(w, "Ack ok for %s", id)
+	})
+
+	mux.GET.HandleFunc("/deadmansswitches", func(w http.ResponseWriter, r *http.Request) {
+		handleJsonOutput(w, app.State.DeadMansSwitches())
+	})
+
+	// /deadmansswitch/checkin?subject=ubackup_done&ttl=24h30m
+	mux.GET.HandleFunc("/deadmansswitch/checkin", func(w http.ResponseWriter, r *http.Request) {
 		// same semantic hack here as acknowledge endpoint
-		return handleDeadMansSwitchCheckin(ctx, alertmanagertypes.DeadMansSwitchCheckinRequest{
-			Subject: req.QueryStringParameters["subject"],
-			TTL:     req.QueryStringParameters["ttl"],
+
+		// handles validation
+		handleDeadMansSwitchCheckin(w, r, alertmanagertypes.DeadMansSwitchCheckinRequest{
+			Subject: r.URL.Query().Get("subject"),
+			TTL:     r.URL.Query().Get("ttl"),
 		})
-	case "POST /deadmansswitch/checkin": // {"subject":"ubackup_done","ttl":"24h30m"}
+	})
+
+	mux.POST.HandleFunc("/deadmansswitch/checkin", func(w http.ResponseWriter, r *http.Request) {
 		checkin := alertmanagertypes.DeadMansSwitchCheckinRequest{}
-		if err := jsonfile.Unmarshal(bytes.NewBufferString(req.Body), &checkin, true); err != nil {
-			return lambdautils.BadRequest(err.Error()), nil
+		if err := jsonfile.Unmarshal(r.Body, &checkin, true); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
 
-		return handleDeadMansSwitchCheckin(ctx, checkin)
-	case "GET /deadmansswitches":
-		return handleGetDeadMansSwitches(ctx, app)
-	case "POST /prometheus-alertmanager/api/v1/alerts":
-		return lambdautils.InternalServerError("not implemented yet"), nil
-	default:
-		return lambdautils.BadRequest(fmt.Sprintf("unknown endpoint: %s", synopsis)), nil
-	}
+		// handles validation
+		handleDeadMansSwitchCheckin(w, r, checkin)
+	})
+
+	mux.POST.HandleFunc("/prometheus-alertmanager/api/v1/alerts", func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "not implemented yet", http.StatusInternalServerError)
+	})
+
+	return mux
 }
 
-func handleGetAlerts(
-	ctx context.Context,
-	req events.APIGatewayProxyRequest,
-	app *amstate.App,
-) (*events.APIGatewayProxyResponse, error) {
-	return lambdautils.RespondJson(app.State.ActiveAlerts())
-}
-
-func handleAcknowledgeAlert(ctx context.Context, id string) (*events.APIGatewayProxyResponse, error) {
-	if err := alertAck(ctx, id); err != nil {
-		return lambdautils.InternalServerError(err.Error()), nil
-	}
-
-	return lambdautils.OkText(fmt.Sprintf("Ack ok for %s", id))
-}
-
-func handleGetDeadMansSwitches(
-	ctx context.Context,
-	app *amstate.App,
-) (*events.APIGatewayProxyResponse, error) {
-	return lambdautils.RespondJson(app.State.DeadMansSwitches())
-}
-
-func handleDeadMansSwitchCheckin(ctx context.Context, raw alertmanagertypes.DeadMansSwitchCheckinRequest) (*events.APIGatewayProxyResponse, error) {
+ func handleDeadMansSwitchCheckin(
+ 	w http.ResponseWriter,
+ 	r *http.Request,
+ 	raw alertmanagertypes.DeadMansSwitchCheckinRequest,
+ ) {
 	if raw.Subject == "" || raw.TTL == "" {
-		return lambdautils.BadRequest("subject or ttl empty"), nil
+		http.Error(w, "subject or ttl empty", http.StatusBadRequest)
+		return
 	}
 
 	now := time.Now()
 
 	ttl, err := parseTtlSpec(raw.TTL, now)
 	if err != nil {
-		return lambdautils.BadRequest(err.Error()), nil
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
-	alertAcked, err := deadmansswitchCheckin(ctx, raw.Subject, ttl)
+	alertAcked, err := deadmansswitchCheckin(r.Context(), raw.Subject, ttl)
 	if err != nil {
-		return lambdautils.InternalServerError(err.Error()), nil
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	if alertAcked {
-		return lambdautils.OkText("Check-in noted; alert that was firing for this dead mans's switch was acked")
+		fmt.Fprintln(w, "Check-in noted; alert that was firing for this dead mans's switch was acked")
+	} else {
+		fmt.Fprintln(w, "Check-in noted")
+	}
+}
+
+func handleJsonOutput(w http.ResponseWriter, output interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if err := json.NewEncoder(w).Encode(output); err != nil {
+		panic(err)
+	}
+}
+
+func restApiCliEntry() *cobra.Command {
+	return &cobra.Command{
+		Use:   "restapi",
+		Short: "Start REST API (used mainly for dev/testing)",
+		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			logger := logex.StandardLogger()
+
+			exitIfError(runStandaloneRestApi(
+				ossignal.InterruptOrTerminateBackgroundCtx(logger),
+				logger))
+		},
+	}
+}
+
+func runStandaloneRestApi(ctx context.Context, logger *log.Logger) error {
+	srv := &http.Server{
+		Addr:    ":80",
+		Handler: newRestApi(ctx),
 	}
 
-	return lambdautils.OkText("Check-in noted")
+	tasks := taskrunner.New(ctx, logger)
+
+	tasks.Start("listener "+srv.Addr, func(_ context.Context, _ string) error {
+		return httputils.RemoveGracefulServerClosedError(srv.ListenAndServe())
+	})
+
+	tasks.Start("listenershutdowner", httputils.ServerShutdownTask(srv))
+
+	return tasks.Wait()
 }
 
 func ackLink(alert amstate.Alert) string {

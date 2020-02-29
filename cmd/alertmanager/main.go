@@ -37,6 +37,8 @@ func main() {
 
 	app.AddCommand(ehcli.Entrypoint())
 
+	app.AddCommand(restApiCliEntry())
+
 	app.AddCommand(&cobra.Command{
 		Use:   "lambda-scheduler",
 		Short: "Run what Lambda would invoke in response to scheduler event",

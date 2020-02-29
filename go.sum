@@ -7,6 +7,8 @@ github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRF
 github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/apcera/termtables v0.0.0-20170405184538-bcbc5dc54055 h1:IkPAzP+QjchKXXFX6LCcpDKa89b/e/0gPCUbQGWtUUY=
 github.com/apcera/termtables v0.0.0-20170405184538-bcbc5dc54055/go.mod h1:8mHYHlOef9UC51cK1/WRvE/iQVM8O8QlYFa8eh8r5I8=
+github.com/apex/gateway v1.1.1 h1:dPE3y2LQ/fSJuZikCOvekqXLyn/Wrbgt10MSECobH/Q=
+github.com/apex/gateway v1.1.1/go.mod h1:x7iPY22zu9D8sfrynawEwh1wZEO/kQTRaOM5ye02tWU=
 github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6/go.mod h1:grANhF5doyWs3UAsr3K4I6qtAmlQcZDesFNEHPZAzj8=
 github.com/aws/aws-lambda-go v1.13.2/go.mod h1:4UKl9IzQMoD+QF79YdCuzCwp8VbmG4VAQwij/eHl5CU=
 github.com/aws/aws-lambda-go v1.14.0 h1:kTr1VPabIgJsMVzHuZpNhs/5RR46LU6wyWUiHxtb3ag=
@@ -40,8 +42,8 @@ github.com/function61/eventhorizon v0.2.1-0.20200227140656-f89fe5d462ca h1:FY7y7
 github.com/function61/eventhorizon v0.2.1-0.20200227140656-f89fe5d462ca/go.mod h1:SztwDAaqWnLPSFyVmV0zbBgRsvExr0GzrlOj9sWTC+Y=
 github.com/function61/gokit v0.0.0-20200226141201-fe205250686d h1:sbcDaH7t/trZpAv77EU9hl/rjjse+Mc70MO8MAhILnM=
 github.com/function61/gokit v0.0.0-20200226141201-fe205250686d/go.mod h1:jAkW2pwxa4N3qxEUDA3zDhfiJInBfF4BjsbkWAU13aU=
-github.com/function61/gokit v0.0.0-20200229073330-25232411c1f6 h1:UyuV6K5s+Y1eE7CdaBfwm+Yh6AiYFV2i6CfOuSJtvgw=
-github.com/function61/gokit v0.0.0-20200229073330-25232411c1f6/go.mod h1:jAkW2pwxa4N3qxEUDA3zDhfiJInBfF4BjsbkWAU13aU=
+github.com/function61/gokit v0.0.0-20200229115114-3eca8c87d0cc h1:FWizzRbJISAu9y2vKheno6BpHFkMnBl4mFl1nV9wKBI=
+github.com/function61/gokit v0.0.0-20200229115114-3eca8c87d0cc/go.mod h1:jAkW2pwxa4N3qxEUDA3zDhfiJInBfF4BjsbkWAU13aU=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/go-kit/kit v0.8.0/go.mod h1:xBxKIO96dXMWWy0MnWVtmwkA9/13aqxPnvrjFYMA2as=
 github.com/go-kit/kit v0.9.0/go.mod h1:xBxKIO96dXMWWy0MnWVtmwkA9/13aqxPnvrjFYMA2as=
@@ -105,6 +107,7 @@ github.com/patrickmn/go-cache v2.1.0+incompatible/go.mod h1:3Qf8kWWT7OJRJbdiICTK
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
+github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
@@ -156,6 +159,8 @@ github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UV
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/stretchr/testify v1.5.1 h1:nOGnQDM7FYENwehXlg/kFVnos3rEvtKTjRvOWSzb6H4=
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
+github.com/tj/assert v0.0.0-20190920132354-ee03d75cd160 h1:NSWpaDaurcAJY7PkL8Xt0PhZE7qpvbZl5ljd8r6U0bI=
+github.com/tj/assert v0.0.0-20190920132354-ee03d75cd160/go.mod h1:mZ9/Rh9oLWpLLDRpvE+3b7gP/C2YyLFYxNmcLnPTMe0=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGrc=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=

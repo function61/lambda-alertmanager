@@ -1,11 +1,34 @@
 package lambdautils
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/apex/gateway"
 	"github.com/aws/aws-lambda-go/events"
 	"net/http"
 )
+
+// github.com/akrylysov/algnhsa has similar implementation than apex/gateway, but had the
+// useful bits non-exported and it used httptest for production code
+func ServeApiGatewayProxyRequestUsingHttpHandler(
+	ctx context.Context,
+	proxyRequest *events.APIGatewayProxyRequest,
+	httpHandler http.Handler,
+) ([]byte, error) {
+	request, err := gateway.NewRequest(ctx, *proxyRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	response := gateway.NewResponse()
+
+	httpHandler.ServeHTTP(response, request)
+
+	proxyResponse := response.End()
+
+	return json.Marshal(&proxyResponse)
+}
 
 func Redirect(to string) events.APIGatewayProxyResponse {
 	return events.APIGatewayProxyResponse{
