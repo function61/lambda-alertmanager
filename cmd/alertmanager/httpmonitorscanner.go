@@ -48,8 +48,7 @@ func httpMonitorScanAndAlertFailuresWithApp(ctx context.Context, app *amstate.Ap
 	}
 
 	// ok with len(alerts) == 0
-	_, err := ingestAlerts(ctx, alerts, app)
-	return err
+	return ingestAlerts(ctx, alerts, app)
 }
 
 // scans HTTP monitors and returns the ones that failed

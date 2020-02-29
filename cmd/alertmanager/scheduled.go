@@ -101,8 +101,7 @@ func alertForDeadExpiredMansSwitches(ctx context.Context, app *amstate.App, now 
 	}
 
 	// ok with len(alerts) == 0
-	_, err := ingestAlerts(ctx, candidateAlerts, app)
-	return err
+	return ingestAlerts(ctx, candidateAlerts, app)
 }
 
 var plusDayAtStaticTimeRe = regexp.MustCompile(`^\+([0-9]+)d@([0-9]{2}):([0-9]{2})$`)

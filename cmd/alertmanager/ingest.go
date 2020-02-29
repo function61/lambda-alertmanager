@@ -32,13 +32,17 @@ func handleSnsIngest(ctx context.Context, event events.SNSEvent) error {
 		})
 	}
 
-	_, err = ingestAlerts(ctx, candidateAlerts, app)
-	return err
+	return ingestAlerts(ctx, candidateAlerts, app)
 }
 
 // this is somewhat of a hack to pass candidate-phase alerts as the same struct as we get
 // from the actual persisted State
-func ingestAlerts(ctx context.Context, candidateAlerts []amstate.Alert, app *amstate.App) (bool, error) {
+func ingestAlerts(ctx context.Context, candidateAlerts []amstate.Alert, app *amstate.App) error {
+	_, err := ingestAlertsAndReturnCreatedFlag(ctx, candidateAlerts, app)
+	return err
+}
+
+func ingestAlertsAndReturnCreatedFlag(ctx context.Context, candidateAlerts []amstate.Alert, app *amstate.App) (bool, error) {
 	ingestedAny := false
 
 	maxActiveAlerts, err := getMaxFiringAlerts()

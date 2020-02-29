@@ -40,7 +40,7 @@ func handleRestCall(ctx context.Context, req events.APIGatewayProxyRequest) (*ev
 		}
 		alert.Id = amstate.NewAlertId()
 
-		created, err := ingestAlerts(ctx, []amstate.Alert{alert}, app)
+		created, err := ingestAlertsAndReturnCreatedFlag(ctx, []amstate.Alert{alert}, app)
 		if err != nil {
 			return apigatewayutils.InternalServerError(err.Error()), nil
 		}
