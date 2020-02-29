@@ -63,7 +63,8 @@ func deadMansSwitchEntry() *cobra.Command {
 				ctx,
 				args[0],
 				ttl,
-				app)
+				app,
+				time.Now())
 			exitIfError(err)
 		},
 	})
@@ -116,9 +117,8 @@ func deadmansswitchCheckin(
 	subject string,
 	ttl time.Time,
 	app *amstate.App,
+	now time.Time,
 ) (bool, error) {
-	now := time.Now()
-
 	alertAcked := false
 
 	checkin := amdomain.NewDeadMansSwitchCheckin(
@@ -135,8 +135,6 @@ func deadmansswitchCheckin(
 				subject,
 				ttl,
 				ehevent.MetaSystemUser(now)))
-
-			alertAcked = true
 		}
 
 		events = append(events, checkin)
@@ -145,6 +143,8 @@ func deadmansswitchCheckin(
 			events = append(events, amdomain.NewAlertAcknowledged(
 				alert.Id,
 				ehevent.MetaSystemUser(now)))
+
+			alertAcked = true
 		}
 
 		return app.AppendAfter(ctx, app.State.Version(), events...)

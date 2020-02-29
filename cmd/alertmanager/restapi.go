@@ -116,7 +116,7 @@ func handleDeadMansSwitchCheckin(
 		return
 	}
 
-	alertAcked, err := deadmansswitchCheckin(r.Context(), raw.Subject, ttl, app)
+	alertAcked, err := deadmansswitchCheckin(r.Context(), raw.Subject, ttl, app, time.Now())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
