@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/function61/eventhorizon/pkg/ehevent"
 	"github.com/function61/gokit/ossignal"
+	"github.com/function61/gokit/stringutils"
 	"github.com/function61/lambda-alertmanager/pkg/amdomain"
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
-	"github.com/function61/lambda-alertmanager/pkg/wtfgo"
 	"github.com/scylladb/termtables"
 	"github.com/spf13/cobra"
 	"time"
@@ -103,7 +103,11 @@ func httpMonitorList(ctx context.Context) error {
 	view.AddHeaders("Id", "Enabled", "Url", "Find")
 
 	for _, alert := range app.State.HttpMonitors() {
-		view.AddRow(alert.Id, boolToCheckmark(alert.Enabled), wtfgo.Truncate(alert.Url, 44), alert.Find)
+		view.AddRow(
+			alert.Id,
+			boolToCheckmark(alert.Enabled),
+			stringutils.Truncate(alert.Url, 44),
+			alert.Find)
 	}
 
 	fmt.Println(view.Render())

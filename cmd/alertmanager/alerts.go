@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/function61/eventhorizon/pkg/ehevent"
 	"github.com/function61/gokit/ossignal"
+	"github.com/function61/gokit/stringutils"
 	"github.com/function61/lambda-alertmanager/pkg/amdomain"
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
-	"github.com/function61/lambda-alertmanager/pkg/wtfgo"
 	"github.com/scylladb/termtables"
 	"github.com/spf13/cobra"
 	"strings"
@@ -91,7 +91,7 @@ func alertList(ctx context.Context) error {
 			alert.Id,
 			alert.Timestamp.Format(time.RFC3339),
 			alert.Subject,
-			wtfgo.Truncate(removeLinebreaks(alert.Details), 50))
+			stringutils.Truncate(removeLinebreaks(alert.Details), 50))
 	}
 
 	fmt.Println(view.Render())

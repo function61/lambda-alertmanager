@@ -6,8 +6,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/function61/gokit/envvar"
+	"github.com/function61/gokit/stringutils"
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
-	"github.com/function61/lambda-alertmanager/pkg/wtfgo"
 )
 
 func publishAlert(alert amstate.Alert) error {
@@ -35,8 +35,8 @@ func publishAlert(alert amstate.Alert) error {
 		Default string `json:"default"` // email etc.
 		Sms     string `json:"sms"`
 	}{
-		Default: ackLinkMaybe + wtfgo.Truncate(messageText, 4*1024),
-		Sms:     wtfgo.Substr(messageText, 0, 160-7), // -7 for "ALERT >" prefix in SMS messages
+		Default: ackLinkMaybe + stringutils.Truncate(messageText, 4*1024),
+		Sms:     stringutils.Truncate(messageText, 160-7), // -7 for "ALERT >" prefix in SMS messages
 	}
 
 	messagePerProtocolJson, err := json.Marshal(&messagePerProtocol)
