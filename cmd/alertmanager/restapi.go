@@ -27,12 +27,12 @@ func handleRestCall(ctx context.Context, req events.APIGatewayProxyRequest) (*ev
 	case "GET /alerts/acknowledge":
 		// this endpoint should really be a POST (since it mutates state), but we've to be
 		// pragmatic here because we want acks to be ack-able from emails
-		key := req.QueryStringParameters["key"]
-		if key == "" {
-			return apigatewayutils.BadRequest("key not specified"), nil
+		id := req.QueryStringParameters["id"]
+		if id == "" {
+			return apigatewayutils.BadRequest("id not specified"), nil
 		}
 
-		return handleAcknowledgeAlert(ctx, key)
+		return handleAcknowledgeAlert(ctx, id)
 	case "POST /alerts/ingest":
 		alert := amstate.Alert{}
 		if err := jsonfile.Unmarshal(bytes.NewBufferString(req.Body), &alert, true); err != nil {
