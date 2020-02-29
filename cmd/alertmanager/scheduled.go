@@ -20,7 +20,7 @@ func handleCloudwatchScheduledEvent(ctx context.Context, now time.Time) error {
 		return err
 	}
 
-	if err := checkAndAlertForUnnoticedAlerts(ctx, app, now); err != nil {
+	if err := checkAndAlertForUnnoticedAlerts(ctx, app, publishAlert, now); err != nil {
 		return err
 	}
 
@@ -35,9 +35,16 @@ func handleCloudwatchScheduledEvent(ctx context.Context, now time.Time) error {
 	return nil
 }
 
+type alertDirectPublisherFn func(amstate.Alert) error
+
 // check for old unnoticed alerts (not acked within 4 hours) and send an alarm to notify the operator,
 // keep sending every hour
-func checkAndAlertForUnnoticedAlerts(ctx context.Context, app *amstate.App, now time.Time) error {
+func checkAndAlertForUnnoticedAlerts(
+	ctx context.Context,
+	app *amstate.App,
+	alertDirectPublisher alertDirectPublisherFn,
+	now time.Time,
+) error {
 	unnoticedAlerts := amstate.GetUnnoticedAlerts(app.State.ActiveAlerts(), now)
 
 	unnoticedAlertSubjects := []string{}
@@ -56,7 +63,7 @@ func checkAndAlertForUnnoticedAlerts(ctx context.Context, app *amstate.App, now 
 
 	if err := app.Reader.TransactWrite(ctx, func() error {
 		// only notify about unnoticed alerts once an hour
-		if now.Sub(app.State.LastUnnoticedAlertsNotified()) >= 1*time.Hour {
+		if now.Sub(app.State.LastUnnoticedAlertsNotified()) < 1*time.Hour {
 			return errAlreadyNotified
 		}
 
@@ -79,7 +86,7 @@ func checkAndAlertForUnnoticedAlerts(ctx context.Context, app *amstate.App, now 
 	// skip ingestion to bypass rate limiting (this scheduled function is not invoked
 	// too often) and deduplication. besides, we want to keep reminding the operator
 	// to take care of this situation
-	return publishAlert(amstate.Alert{
+	return alertDirectPublisher(amstate.Alert{
 		Subject:   "Un-acked alerts",
 		Details:   details,
 		Timestamp: now,
