@@ -121,38 +121,38 @@ func (s *Store) LastUnnoticedAlertsNotified() time.Time {
 	return s.state.LastUnnoticedAlertsNotified
 }
 
-func (c *Store) GetEventTypes() ehevent.Allocators {
+func (s *Store) GetEventTypes() ehevent.Allocators {
 	return amdomain.Types
 }
 
-func (c *Store) ProcessEvents(_ context.Context, processAndCommit ehreader.EventProcessorHandler) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+func (s *Store) ProcessEvents(_ context.Context, processAndCommit ehreader.EventProcessorHandler) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	return processAndCommit(
-		c.version,
-		func(ev ehevent.Event) error { return c.processEvent(ev) },
+		s.version,
+		func(ev ehevent.Event) error { return s.processEvent(ev) },
 		func(version ehclient.Cursor) error {
-			c.version = version
+			s.version = version
 			return nil
 		})
 }
 
-func (c *Store) processEvent(ev ehevent.Event) error {
-	c.logl.Debug.Println(ev.MetaType())
+func (s *Store) processEvent(ev ehevent.Event) error {
+	s.logl.Debug.Println(ev.MetaType())
 
 	switch e := ev.(type) {
 	case *amdomain.AlertRaised:
-		c.state.ActiveAlerts[e.Id] = Alert{
+		s.state.ActiveAlerts[e.Id] = Alert{
 			Id:        e.Id,
 			Subject:   e.Subject,
 			Details:   e.Details,
 			Timestamp: e.Meta().Timestamp,
 		}
 	case *amdomain.AlertAcknowledged:
-		delete(c.state.ActiveAlerts, e.Id)
+		delete(s.state.ActiveAlerts, e.Id)
 	case *amdomain.HttpMonitorCreated:
-		c.state.HttpMonitors[e.Id] = HttpMonitor{
+		s.state.HttpMonitors[e.Id] = HttpMonitor{
 			Id:      e.Id,
 			Created: e.Meta().Timestamp,
 			Enabled: e.Enabled,
@@ -160,24 +160,24 @@ func (c *Store) processEvent(ev ehevent.Event) error {
 			Find:    e.Find,
 		}
 	case *amdomain.HttpMonitorEnabledUpdated:
-		mon := c.state.HttpMonitors[e.Id]
+		mon := s.state.HttpMonitors[e.Id]
 		mon.Enabled = e.Enabled
-		c.state.HttpMonitors[e.Id] = mon
+		s.state.HttpMonitors[e.Id] = mon
 	case *amdomain.HttpMonitorDeleted:
-		delete(c.state.HttpMonitors, e.Id)
+		delete(s.state.HttpMonitors, e.Id)
 	case *amdomain.DeadMansSwitchCreated:
-		c.state.DeadMansSwitches[e.Subject] = DeadMansSwitch{
+		s.state.DeadMansSwitches[e.Subject] = DeadMansSwitch{
 			Subject: e.Subject,
 			Ttl:     e.Ttl,
 		}
 	case *amdomain.DeadMansSwitchCheckin:
-		dms := c.state.DeadMansSwitches[e.Subject]
+		dms := s.state.DeadMansSwitches[e.Subject]
 		dms.Ttl = e.Ttl
-		c.state.DeadMansSwitches[e.Subject] = dms
+		s.state.DeadMansSwitches[e.Subject] = dms
 	case *amdomain.DeadMansSwitchDeleted:
-		delete(c.state.DeadMansSwitches, e.Subject)
+		delete(s.state.DeadMansSwitches, e.Subject)
 	case *amdomain.UnnoticedAlertsNotified:
-		c.state.LastUnnoticedAlertsNotified = e.Meta().Timestamp
+		s.state.LastUnnoticedAlertsNotified = e.Meta().Timestamp
 	default:
 		return ehreader.UnsupportedEventTypeErr(ev)
 	}
