@@ -24,7 +24,7 @@ func handleCloudwatchScheduledEvent(ctx context.Context, now time.Time) error {
 		return err
 	}
 
-	if err := alertForDeadExpiredMansSwitches(ctx, app, now); err != nil {
+	if err := alertForExpiredDeadMansSwitches(ctx, app, now); err != nil {
 		return err
 	}
 
@@ -93,7 +93,7 @@ func checkAndAlertForUnnoticedAlerts(
 	})
 }
 
-func alertForDeadExpiredMansSwitches(ctx context.Context, app *amstate.App, now time.Time) error {
+func alertForExpiredDeadMansSwitches(ctx context.Context, app *amstate.App, now time.Time) error {
 	candidateAlerts := []amstate.Alert{}
 
 	for _, dms := range amstate.GetExpiredDeadMansSwitches(app.State.DeadMansSwitches(), now) {
