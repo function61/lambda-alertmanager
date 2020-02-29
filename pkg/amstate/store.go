@@ -115,6 +115,9 @@ func (s *Store) DeadMansSwitches() []DeadMansSwitch {
 }
 
 func (s *Store) LastUnnoticedAlertsNotified() time.Time {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	return s.state.LastUnnoticedAlertsNotified
 }
 
