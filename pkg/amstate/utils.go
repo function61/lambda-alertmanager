@@ -47,6 +47,18 @@ func FindHttpMonitorWithId(id string, monitors []HttpMonitor) *HttpMonitor {
 	return nil
 }
 
+func EnabledHttpMonitors(monitors []HttpMonitor) []HttpMonitor {
+	enabled := []HttpMonitor{}
+
+	for _, monitor := range monitors {
+		if monitor.Enabled {
+			enabled = append(enabled, monitor)
+		}
+	}
+
+	return enabled
+}
+
 func FindDeadMansSwitchWithSubject(subject string, dmss []DeadMansSwitch) *DeadMansSwitch {
 	for _, dms := range dmss {
 		if dms.Subject == subject {

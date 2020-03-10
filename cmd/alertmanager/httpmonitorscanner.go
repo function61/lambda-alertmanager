@@ -24,7 +24,7 @@ func httpMonitorScanAndAlertFailures(ctx context.Context, app *amstate.App) erro
 
 	failures := scanMonitors(
 		ctx,
-		app.State.HttpMonitors(),
+		amstate.EnabledHttpMonitors(app.State.HttpMonitors()),
 		newRetryScanner(newScanner()),
 		logex.Prefix("httpscanner", app.Logger))
 
