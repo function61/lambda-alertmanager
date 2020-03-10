@@ -25,7 +25,7 @@ func httpMonitorScanAndAlertFailures(ctx context.Context, app *amstate.App) erro
 	failures := scanMonitors(
 		ctx,
 		app.State.HttpMonitors(),
-		newScanner(),
+		newRetryScanner(newScanner()),
 		logex.Prefix("httpscanner", app.Logger))
 
 	// convert monitor failures into alerts
@@ -56,7 +56,7 @@ func scanMonitors(
 	failedMu := sync.Mutex{}
 
 	checkOne := func(monitor amstate.HttpMonitor) {
-		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		defer cancel()
 
 		started := time.Now()
@@ -99,6 +99,31 @@ func scanMonitors(
 
 type HttpMonitorScanner interface {
 	Scan(context.Context, amstate.HttpMonitor) error
+}
+
+type retryScanner struct {
+	actualScanner HttpMonitorScanner
+}
+
+// retries once, but only if it looks retryable
+func newRetryScanner(actual HttpMonitorScanner) HttpMonitorScanner {
+	return &retryScanner{actual}
+}
+
+func (r *retryScanner) Scan(ctx context.Context, monitor amstate.HttpMonitor) error {
+	firstTryCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
+	if err := r.actualScanner.Scan(firstTryCtx, monitor); err != nil {
+		if err != context.DeadlineExceeded { // non-retryable error
+			return err
+		}
+
+		// now use the longer context
+		return r.actualScanner.Scan(ctx, monitor)
+	}
+
+	return nil
 }
 
 type scanner struct {
