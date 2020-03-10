@@ -95,13 +95,15 @@ func deduplicateAndRatelimit(
 	state *amstate.Store,
 	maxActiveAlerts int,
 ) []amstate.Alert {
-	processed := []amstate.Alert{}
+	filtered := []amstate.Alert{}
 
 	activeAlerts := state.ActiveAlerts()
 
+	addedJustNow := func() int { return len(filtered) }
+
 	for _, alert := range alerts {
 		// no more "room"?
-		if len(activeAlerts) >= maxActiveAlerts {
+		if (len(activeAlerts) + addedJustNow()) >= maxActiveAlerts {
 			continue
 		}
 
@@ -110,10 +112,10 @@ func deduplicateAndRatelimit(
 			continue
 		}
 
-		processed = append(processed, alert)
+		filtered = append(filtered, alert)
 	}
 
-	return processed
+	return filtered
 }
 
 func getMaxFiringAlerts() (int, error) {
