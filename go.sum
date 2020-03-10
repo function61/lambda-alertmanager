@@ -44,6 +44,8 @@ github.com/function61/gokit v0.0.0-20200226141201-fe205250686d h1:sbcDaH7t/trZpA
 github.com/function61/gokit v0.0.0-20200226141201-fe205250686d/go.mod h1:jAkW2pwxa4N3qxEUDA3zDhfiJInBfF4BjsbkWAU13aU=
 github.com/function61/gokit v0.0.0-20200229115114-3eca8c87d0cc h1:FWizzRbJISAu9y2vKheno6BpHFkMnBl4mFl1nV9wKBI=
 github.com/function61/gokit v0.0.0-20200229115114-3eca8c87d0cc/go.mod h1:jAkW2pwxa4N3qxEUDA3zDhfiJInBfF4BjsbkWAU13aU=
+github.com/function61/gokit v0.0.0-20200307135016-6dd948616ce0 h1:gWaoRNeHdRhJ8ELIwvI1xZcxdhaOTuRHr5Y9E7djSA4=
+github.com/function61/gokit v0.0.0-20200307135016-6dd948616ce0/go.mod h1:f6JhYQwMbwfAX472K/2A46CKet7BrpugMzuCobtqPQo=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/go-kit/kit v0.8.0/go.mod h1:xBxKIO96dXMWWy0MnWVtmwkA9/13aqxPnvrjFYMA2as=
 github.com/go-kit/kit v0.9.0/go.mod h1:xBxKIO96dXMWWy0MnWVtmwkA9/13aqxPnvrjFYMA2as=

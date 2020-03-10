@@ -5,7 +5,7 @@ import (
 	"errors"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/function61/lambda-alertmanager/pkg/lambdautils"
+	"github.com/function61/gokit/aws/lambdautils"
 )
 
 func lambdaHandler() {

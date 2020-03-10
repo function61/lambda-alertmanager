@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-lambda-go v1.14.0
 	github.com/aws/aws-sdk-go v1.29.0
 	github.com/function61/eventhorizon v0.2.1-0.20200227140656-f89fe5d462ca
-	github.com/function61/gokit v0.0.0-20200229115114-3eca8c87d0cc
+	github.com/function61/gokit v0.0.0-20200307135016-6dd948616ce0
 	github.com/mattn/go-runewidth v0.0.8 // indirect
 	github.com/scylladb/termtables v1.0.0
 	github.com/spf13/cobra v0.0.6
