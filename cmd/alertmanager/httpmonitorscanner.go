@@ -105,7 +105,7 @@ type retryScanner struct {
 	actualScanner HttpMonitorScanner
 }
 
-// retries once, but only if it looks retryable
+// retries once
 func newRetryScanner(actual HttpMonitorScanner) HttpMonitorScanner {
 	return &retryScanner{actual}
 }
@@ -115,12 +115,17 @@ func (r *retryScanner) Scan(ctx context.Context, monitor amstate.HttpMonitor) er
 	defer cancel()
 
 	if err := r.actualScanner.Scan(firstTryCtx, monitor); err != nil {
-		if err != context.DeadlineExceeded { // non-retryable error
-			return err
-		}
+		time.Sleep(2 * time.Second)
+
+		// it'd be hard to detect if we shouldn't retry this at all, since timeouts,
+		// HTTP gateway errors, internal server errors etc. all can be transient
 
 		// now use the longer context
-		return r.actualScanner.Scan(ctx, monitor)
+		if err2 := r.actualScanner.Scan(ctx, monitor); err2 != nil {
+			return fmt.Errorf("first error: %v; retry error: %v", err, err2)
+		}
+
+		return nil
 	}
 
 	return nil
