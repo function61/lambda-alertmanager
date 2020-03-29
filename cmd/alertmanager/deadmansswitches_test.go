@@ -2,6 +2,10 @@ package main
 
 import (
 	"context"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/function61/eventhorizon/pkg/ehclient"
 	"github.com/function61/eventhorizon/pkg/ehevent"
 	"github.com/function61/eventhorizon/pkg/ehreader"
@@ -9,9 +13,6 @@ import (
 	"github.com/function61/gokit/assert"
 	"github.com/function61/lambda-alertmanager/pkg/amdomain"
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
-	"strings"
-	"testing"
-	"time"
 )
 
 func TestDeadmansswitchCheckin(t *testing.T) {

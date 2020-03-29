@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/function61/eventhorizon/pkg/ehcli"
 	"github.com/function61/eventhorizon/pkg/ehreader"
 	"github.com/function61/gokit/aws/lambdautils"
@@ -11,8 +14,6 @@ import (
 	"github.com/function61/gokit/ossignal"
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
 	"github.com/spf13/cobra"
-	"os"
-	"time"
 )
 
 func main() {

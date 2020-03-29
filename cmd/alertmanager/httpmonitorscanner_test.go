@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/function61/gokit/assert"
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
-	"testing"
 )
 
 func TestOneFails(t *testing.T) {

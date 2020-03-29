@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/function61/eventhorizon/pkg/ehevent"
 	"github.com/function61/gokit/ossignal"
 	"github.com/function61/gokit/stringutils"
@@ -10,7 +12,6 @@ import (
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
 	"github.com/scylladb/termtables"
 	"github.com/spf13/cobra"
-	"time"
 )
 
 func httpMonitorEntry() *cobra.Command {

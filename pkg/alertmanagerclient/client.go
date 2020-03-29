@@ -2,6 +2,7 @@ package alertmanagerclient
 
 import (
 	"context"
+
 	"github.com/function61/gokit/ezhttp"
 	"github.com/function61/lambda-alertmanager/pkg/alertmanagertypes"
 )

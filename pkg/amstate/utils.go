@@ -1,8 +1,9 @@
 package amstate
 
 import (
-	"github.com/function61/gokit/cryptorandombytes"
 	"time"
+
+	"github.com/function61/gokit/cryptorandombytes"
 )
 
 func FindAlertWithSubject(subject string, alerts []Alert) *Alert {

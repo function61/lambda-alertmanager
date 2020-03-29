@@ -5,13 +5,14 @@ package main
 
 import (
 	"context"
+	"os"
+	"strconv"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/function61/eventhorizon/pkg/ehevent"
 	"github.com/function61/gokit/logex"
 	"github.com/function61/lambda-alertmanager/pkg/amdomain"
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
-	"os"
-	"strconv"
 )
 
 // invoked for "AlertManager-ingest" SNS topic

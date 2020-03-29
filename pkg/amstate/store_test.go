@@ -2,13 +2,14 @@ package amstate
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/function61/eventhorizon/pkg/ehevent"
 	"github.com/function61/eventhorizon/pkg/ehreader"
 	"github.com/function61/eventhorizon/pkg/ehreader/ehreadertest"
 	"github.com/function61/gokit/assert"
 	"github.com/function61/lambda-alertmanager/pkg/amdomain"
-	"testing"
-	"time"
 )
 
 const (

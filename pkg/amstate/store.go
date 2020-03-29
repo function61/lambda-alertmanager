@@ -3,15 +3,16 @@ package amstate
 import (
 	"context"
 	"encoding/json"
+	"log"
+	"sort"
+	"sync"
+	"time"
+
 	"github.com/function61/eventhorizon/pkg/ehclient"
 	"github.com/function61/eventhorizon/pkg/ehevent"
 	"github.com/function61/eventhorizon/pkg/ehreader"
 	"github.com/function61/gokit/logex"
 	"github.com/function61/lambda-alertmanager/pkg/amdomain"
-	"log"
-	"sort"
-	"sync"
-	"time"
 )
 
 const (

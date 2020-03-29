@@ -2,8 +2,9 @@
 package amdomain
 
 import (
-	"github.com/function61/eventhorizon/pkg/ehevent"
 	"time"
+
+	"github.com/function61/eventhorizon/pkg/ehevent"
 )
 
 var Types = ehevent.Allocators{

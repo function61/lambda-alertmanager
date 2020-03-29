@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/function61/eventhorizon/pkg/ehevent"
-	"github.com/function61/lambda-alertmanager/pkg/amdomain"
-	"github.com/function61/lambda-alertmanager/pkg/amstate"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/function61/eventhorizon/pkg/ehevent"
+	"github.com/function61/lambda-alertmanager/pkg/amdomain"
+	"github.com/function61/lambda-alertmanager/pkg/amstate"
 )
 
 // runs every minute

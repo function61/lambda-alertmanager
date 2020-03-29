@@ -4,6 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"time"
+
 	"github.com/function61/gokit/httputils"
 	"github.com/function61/gokit/jsonfile"
 	"github.com/function61/gokit/logex"
@@ -12,10 +17,6 @@ import (
 	"github.com/function61/lambda-alertmanager/pkg/alertmanagertypes"
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
 	"github.com/spf13/cobra"
-	"log"
-	"net/http"
-	"os"
-	"time"
 )
 
 func newRestApi(ctx context.Context) http.Handler {

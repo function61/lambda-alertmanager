@@ -3,15 +3,16 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/function61/gokit/ezhttp"
-	"github.com/function61/gokit/logex"
-	"github.com/function61/lambda-alertmanager/pkg/amstate"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/function61/gokit/ezhttp"
+	"github.com/function61/gokit/logex"
+	"github.com/function61/lambda-alertmanager/pkg/amstate"
 )
 
 type monitorFailure struct {
