@@ -5,20 +5,20 @@ import (
 	"fmt"
 	"github.com/function61/eventhorizon/pkg/ehcli"
 	"github.com/function61/eventhorizon/pkg/ehreader"
+	"github.com/function61/gokit/aws/lambdautils"
 	"github.com/function61/gokit/dynversion"
 	"github.com/function61/gokit/logex"
 	"github.com/function61/gokit/ossignal"
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
 	"github.com/spf13/cobra"
 	"os"
-	"strings"
 	"time"
 )
 
 func main() {
 	// AWS Lambda doesn't support giving argv, so we use an ugly hack to detect when
 	// we're in Lambda
-	if strings.Contains(os.Args[0], "_lambda") {
+	if lambdautils.InLambda() {
 		lambdaHandler()
 		return
 	}
