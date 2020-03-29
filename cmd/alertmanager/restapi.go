@@ -30,6 +30,8 @@ func newRestApi(ctx context.Context) http.Handler {
 	mux := httputils.NewMethodMux()
 
 	mux.GET.HandleFunc("/alerts", func(w http.ResponseWriter, r *http.Request) {
+		noCacheHeaders(w)
+
 		handleJsonOutput(w, app.State.ActiveAlerts())
 	})
 
@@ -57,6 +59,8 @@ func newRestApi(ctx context.Context) http.Handler {
 	mux.GET.HandleFunc("/alerts/acknowledge", func(w http.ResponseWriter, r *http.Request) {
 		id := r.URL.Query().Get("id")
 
+		noCacheHeaders(w)
+
 		if err := alertAck(r.Context(), id); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -66,12 +70,16 @@ func newRestApi(ctx context.Context) http.Handler {
 	})
 
 	mux.GET.HandleFunc("/deadmansswitches", func(w http.ResponseWriter, r *http.Request) {
+		noCacheHeaders(w)
+
 		handleJsonOutput(w, app.State.DeadMansSwitches())
 	})
 
 	// /deadmansswitch/checkin?subject=ubackup_done&ttl=24h30m
 	mux.GET.HandleFunc("/deadmansswitch/checkin", func(w http.ResponseWriter, r *http.Request) {
 		// same semantic hack here as acknowledge endpoint
+
+		noCacheHeaders(w)
 
 		// handles validation
 		handleDeadMansSwitchCheckin(w, r, alertmanagertypes.DeadMansSwitchCheckinRequest{
@@ -172,4 +180,8 @@ func runStandaloneRestApi(ctx context.Context, logger *log.Logger) error {
 
 func ackLink(alert amstate.Alert) string {
 	return os.Getenv("API_ENDPOINT") + "/alerts/acknowledge?id=" + alert.Id
+}
+
+func noCacheHeaders(w http.ResponseWriter) {
+	w.Header().Set("Cache-Control", "no-store, must-revalidate")
 }
