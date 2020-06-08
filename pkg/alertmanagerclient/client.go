@@ -5,13 +5,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/function61/gokit/ezhttp"
 	"github.com/function61/gokit/envvar"
+	"github.com/function61/gokit/ezhttp"
 	"github.com/function61/lambda-alertmanager/pkg/alertmanagertypes"
 )
 
 const (
-	baseUrlEnvVarName="ALERTMANAGER_BASEURL"
+	baseUrlEnvVarName = "ALERTMANAGER_BASEURL"
 )
 
 type Client struct {
@@ -59,11 +59,11 @@ func ClientFromEnvOptional() *Client {
 }
 
 // required version of ClientFromEnvOptional()
-func ClientFromEnvRequired() (*Client,error){
-	baseUrl,err := envvar.Required(baseUrlEnvVarName)
+func ClientFromEnvRequired() (*Client, error) {
+	baseUrl, err := envvar.Required(baseUrlEnvVarName)
 	if err != nil {
 		return nil, err
 	}
 
-	return New(baseUrl),nil
+	return New(baseUrl), nil
 }
