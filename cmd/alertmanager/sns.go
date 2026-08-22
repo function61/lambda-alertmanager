@@ -6,8 +6,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sns"
-	"github.com/function61/gokit/envvar"
-	"github.com/function61/gokit/stringutils"
+	"github.com/function61/gokit/os/osutil"
+	"github.com/function61/gokit/strings/stringutils"
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
 )
 
@@ -22,13 +22,13 @@ func publishAlert(alert amstate.Alert) error {
 
 	messageText := alert.Subject + "\n\n" + alert.Details
 
-	alertTopic, err := envvar.Required("ALERT_TOPIC")
+	alertTopic, err := osutil.GetenvRequired("ALERT_TOPIC")
 	if err != nil {
 		return err
 	}
 
 	ackLinkMaybe := ""
-	if alert.Id != "" {
+	if alert.ID != "" {
 		ackLinkMaybe = "Ack: " + ackLink(alert) + "\n\n"
 	}
 
@@ -40,16 +40,16 @@ func publishAlert(alert amstate.Alert) error {
 		Sms:     stringutils.Truncate(messageText, 160-7), // -7 for "ALERT >" prefix in SMS messages
 	}
 
-	messagePerProtocolJson, err := json.Marshal(&messagePerProtocol)
+	messagePerProtocolJSON, err := json.Marshal(&messagePerProtocol)
 	if err != nil {
 		return err
 	}
 
 	_, err = snsSvc.Publish(&sns.PublishInput{
-		TopicArn:         aws.String(alertTopic),
-		Subject:          aws.String(alert.Subject),
-		Message:          aws.String(string(messagePerProtocolJson)),
-		MessageStructure: aws.String("json"),
+		TopicArn:         new(alertTopic),
+		Subject:          new(alert.Subject),
+		Message:          new(string(messagePerProtocolJSON)),
+		MessageStructure: new("json"),
 	})
 	return err
 }

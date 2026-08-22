@@ -3,21 +3,20 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"log"
+	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/function61/gokit/ezhttp"
-	"github.com/function61/gokit/logex"
+	"github.com/function61/gokit/net/http/ezhttp"
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
 )
 
 type monitorFailure struct {
 	err     error
-	monitor amstate.HttpMonitor
+	monitor amstate.HTTPMonitor
 }
 
 func httpMonitorScanAndAlertFailures(ctx context.Context, app *amstate.App) error {
@@ -25,16 +24,16 @@ func httpMonitorScanAndAlertFailures(ctx context.Context, app *amstate.App) erro
 
 	failures := scanMonitors(
 		ctx,
-		amstate.EnabledHttpMonitors(app.State.HttpMonitors()),
+		amstate.EnabledHTTPMonitors(app.State.HTTPMonitors()),
 		newRetryScanner(newScanner()),
-		logex.Prefix("httpscanner", app.Logger))
+		app.Logger.With("component", "httpscanner"))
 
 	// convert monitor failures into alerts
 	alerts := []amstate.Alert{}
 	for _, failure := range failures {
 		alerts = append(alerts, amstate.Alert{
-			Id:        amstate.NewAlertId(),
-			Subject:   failure.monitor.Url,
+			ID:        amstate.NewAlertID(),
+			Subject:   failure.monitor.URL,
 			Details:   failure.err.Error(),
 			Timestamp: startOfScan,
 		})
@@ -47,16 +46,18 @@ func httpMonitorScanAndAlertFailures(ctx context.Context, app *amstate.App) erro
 // scans HTTP monitors and returns the ones that failed
 func scanMonitors(
 	ctx context.Context,
-	monitors []amstate.HttpMonitor,
-	scanner HttpMonitorScanner,
-	logger *log.Logger,
+	monitors []amstate.HTTPMonitor,
+	scanner HTTPMonitorScanner,
+	logger *slog.Logger,
 ) []monitorFailure {
-	logl := logex.Levels(logger)
+	if logger == nil {
+		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
 
 	failed := []monitorFailure{}
 	failedMu := sync.Mutex{}
 
-	checkOne := func(monitor amstate.HttpMonitor) {
+	checkOne := func(monitor amstate.HTTPMonitor) {
 		ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		defer cancel()
 
@@ -75,13 +76,18 @@ func scanMonitors(
 				monitor,
 			})
 
-			logl.Error.Printf("❌ %s @ %d ms => %v", monitor.Url, durationMs, err.Error())
+			logger.ErrorContext(ctx, "HTTP monitor scan failed",
+				"url", monitor.URL,
+				"duration_ms", durationMs,
+				"err", err)
 		} else {
-			logl.Debug.Printf("✔️ %s @ %d ms", monitor.Url, durationMs)
+			logger.DebugContext(ctx, "HTTP monitor scan succeeded",
+				"url", monitor.URL,
+				"duration_ms", durationMs)
 		}
 	}
 
-	work := make(chan amstate.HttpMonitor)
+	work := make(chan amstate.HTTPMonitor)
 
 	concurrently(3, func() {
 		for monitor := range work {
@@ -98,20 +104,20 @@ func scanMonitors(
 	return failed
 }
 
-type HttpMonitorScanner interface {
-	Scan(context.Context, amstate.HttpMonitor) error
+type HTTPMonitorScanner interface {
+	Scan(context.Context, amstate.HTTPMonitor) error
 }
 
 type retryScanner struct {
-	actualScanner HttpMonitorScanner
+	actualScanner HTTPMonitorScanner
 }
 
 // retries once
-func newRetryScanner(actual HttpMonitorScanner) HttpMonitorScanner {
+func newRetryScanner(actual HTTPMonitorScanner) HTTPMonitorScanner {
 	return &retryScanner{actual}
 }
 
-func (r *retryScanner) Scan(ctx context.Context, monitor amstate.HttpMonitor) error {
+func (r *retryScanner) Scan(ctx context.Context, monitor amstate.HTTPMonitor) error {
 	firstTryCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
@@ -136,7 +142,7 @@ type scanner struct {
 	noRedirects *http.Client
 }
 
-func newScanner() HttpMonitorScanner {
+func newScanner() HTTPMonitorScanner {
 	return &scanner{
 		&http.Client{
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -146,18 +152,18 @@ func newScanner() HttpMonitorScanner {
 	}
 }
 
-func (s *scanner) Scan(ctx context.Context, monitor amstate.HttpMonitor) error {
+func (s *scanner) Scan(ctx context.Context, monitor amstate.HTTPMonitor) error {
 	resp, err := ezhttp.Get(
 		ctx,
-		monitor.Url,
+		monitor.URL,
 		ezhttp.TolerateNon2xxResponse,
 		ezhttp.Client(s.noRedirects)) // rationale: no much else than how previous one worked
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
-	buf, err := ioutil.ReadAll(resp.Body)
+	buf, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -176,13 +182,11 @@ func mustFindStringInBody(body string, find string) error {
 func concurrently(numWorkers int, worker func(), produceWork func()) {
 	workersDone := sync.WaitGroup{}
 
-	for i := 0; i < numWorkers; i++ {
-		workersDone.Add(1)
-		go func() {
-			defer workersDone.Done()
+	for range numWorkers {
+		workersDone.Go(func() {
 
 			worker()
-		}()
+		})
 	}
 
 	produceWork()

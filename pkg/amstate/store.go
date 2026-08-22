@@ -3,7 +3,7 @@ package amstate
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"sort"
 	"sync"
 	"time"
@@ -11,7 +11,6 @@ import (
 	"github.com/function61/eventhorizon/pkg/ehclient"
 	"github.com/function61/eventhorizon/pkg/ehevent"
 	"github.com/function61/eventhorizon/pkg/ehreader"
-	"github.com/function61/gokit/logex"
 	"github.com/function61/lambda-alertmanager/pkg/amdomain"
 )
 
@@ -22,7 +21,7 @@ const (
 func newStateFormat() stateFormat {
 	return stateFormat{
 		ActiveAlerts:     map[string]Alert{},
-		HttpMonitors:     map[string]HttpMonitor{},
+		HTTPMonitors:     map[string]HTTPMonitor{},
 		DeadMansSwitches: map[string]DeadMansSwitch{},
 	}
 }
@@ -31,14 +30,18 @@ type Store struct {
 	version ehclient.Cursor
 	mu      sync.Mutex
 	state   stateFormat // for easy snapshotting
-	logl    *logex.Leveled
+	logger  *slog.Logger
 }
 
-func New(tenant ehreader.Tenant, logger *log.Logger) *Store {
+func New(tenant ehreader.Tenant, logger *slog.Logger) *Store {
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	return &Store{
 		version: ehclient.Beginning(tenant.Stream(Stream)),
 		state:   newStateFormat(),
-		logl:    logex.Levels(logger),
+		logger:  logger,
 	}
 }
 
@@ -85,12 +88,12 @@ func (s *Store) ActiveAlerts() []Alert {
 	return alerts
 }
 
-func (s *Store) HttpMonitors() []HttpMonitor {
+func (s *Store) HTTPMonitors() []HTTPMonitor {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	monitors := []HttpMonitor{}
-	for _, alert := range s.state.HttpMonitors {
+	monitors := []HTTPMonitor{}
+	for _, alert := range s.state.HTTPMonitors {
 		monitors = append(monitors, alert)
 	}
 
@@ -140,40 +143,40 @@ func (s *Store) ProcessEvents(_ context.Context, processAndCommit ehreader.Event
 }
 
 func (s *Store) processEvent(ev ehevent.Event) error {
-	s.logl.Debug.Println(ev.MetaType())
+	s.logger.Debug("processing event", "type", ev.MetaType())
 
 	switch e := ev.(type) {
 	case *amdomain.AlertRaised:
-		s.state.ActiveAlerts[e.Id] = Alert{
-			Id:        e.Id,
+		s.state.ActiveAlerts[e.ID] = Alert{
+			ID:        e.ID,
 			Subject:   e.Subject,
 			Details:   e.Details,
 			Timestamp: e.Meta().Timestamp,
 		}
 	case *amdomain.AlertAcknowledged:
-		delete(s.state.ActiveAlerts, e.Id)
-	case *amdomain.HttpMonitorCreated:
-		s.state.HttpMonitors[e.Id] = HttpMonitor{
-			Id:      e.Id,
+		delete(s.state.ActiveAlerts, e.ID)
+	case *amdomain.HTTPMonitorCreated:
+		s.state.HTTPMonitors[e.ID] = HTTPMonitor{
+			ID:      e.ID,
 			Created: e.Meta().Timestamp,
 			Enabled: e.Enabled,
-			Url:     e.Url,
+			URL:     e.URL,
 			Find:    e.Find,
 		}
-	case *amdomain.HttpMonitorEnabledUpdated:
-		mon := s.state.HttpMonitors[e.Id]
+	case *amdomain.HTTPMonitorEnabledUpdated:
+		mon := s.state.HTTPMonitors[e.ID]
 		mon.Enabled = e.Enabled
-		s.state.HttpMonitors[e.Id] = mon
-	case *amdomain.HttpMonitorDeleted:
-		delete(s.state.HttpMonitors, e.Id)
+		s.state.HTTPMonitors[e.ID] = mon
+	case *amdomain.HTTPMonitorDeleted:
+		delete(s.state.HTTPMonitors, e.ID)
 	case *amdomain.DeadMansSwitchCreated:
 		s.state.DeadMansSwitches[e.Subject] = DeadMansSwitch{
 			Subject: e.Subject,
-			Ttl:     e.Ttl,
+			TTL:     e.TTL,
 		}
 	case *amdomain.DeadMansSwitchCheckin:
 		dms := s.state.DeadMansSwitches[e.Subject]
-		dms.Ttl = e.Ttl
+		dms.TTL = e.TTL
 		s.state.DeadMansSwitches[e.Subject] = dms
 	case *amdomain.DeadMansSwitchDeleted:
 		delete(s.state.DeadMansSwitches, e.Subject)
@@ -190,7 +193,7 @@ type App struct {
 	State  *Store
 	Reader *ehreader.Reader
 	Writer ehclient.Writer
-	Logger *log.Logger
+	Logger *slog.Logger
 }
 
 // helper
@@ -208,8 +211,12 @@ func (a *App) AppendAfter(ctx context.Context, cur ehclient.Cursor, events ...eh
 func LoadUntilRealtime(
 	ctx context.Context,
 	tenantCtx *ehreader.TenantCtxWithSnapshots,
-	logger *log.Logger,
+	logger *slog.Logger,
 ) (*App, error) {
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	store := New(tenantCtx.Tenant, logger)
 
 	a := &App{

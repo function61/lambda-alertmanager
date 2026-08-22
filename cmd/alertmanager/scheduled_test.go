@@ -4,14 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/function61/eventhorizon/pkg/ehevent"
 	"github.com/function61/eventhorizon/pkg/ehreader"
 	"github.com/function61/eventhorizon/pkg/ehreader/ehreadertest"
-	"github.com/function61/gokit/assert"
+	"github.com/function61/gokit/testing/assert"
 	"github.com/function61/lambda-alertmanager/pkg/amdomain"
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
 )
@@ -43,7 +42,7 @@ func TestCheckAndAlertForUnnoticedAlerts(t *testing.T) {
 	assert.Ok(t, err)
 
 	// lame hack to get ackLink() to produce URLs while in testing
-	os.Setenv("API_ENDPOINT", "https://alertmanager.com/api")
+	t.Setenv("API_ENDPOINT", "https://alertmanager.com/api")
 
 	unnoticedAlertAtT0Plus := func(plus time.Duration) string { // helper
 		var publishedAlert *amstate.Alert
@@ -55,10 +54,10 @@ func TestCheckAndAlertForUnnoticedAlerts(t *testing.T) {
 			return nil
 		}, t0.Add(plus)))
 
-		publishedAlertAsJson, err := json.MarshalIndent(publishedAlert, "", "  ")
+		publishedAlertAsJSON, err := json.MarshalIndent(publishedAlert, "", "  ")
 		assert.Ok(t, err)
 
-		return string(publishedAlertAsJson)
+		return string(publishedAlertAsJSON)
 	}
 
 	/*	we want alert at 4 hour mark when alert is un-acked, then *every* hour again:
@@ -72,25 +71,25 @@ func TestCheckAndAlertForUnnoticedAlerts(t *testing.T) {
 		5:00 => second "unnoticed" alert
 		...
 	*/
-	assert.EqualString(t, unnoticedAlertAtT0Plus(0*time.Hour), "null")
-	assert.EqualString(t, unnoticedAlertAtT0Plus(1*time.Hour), "null")
-	assert.EqualString(t, unnoticedAlertAtT0Plus(2*time.Hour), "null")
-	assert.EqualString(t, unnoticedAlertAtT0Plus(3*time.Hour), "null")
-	assert.EqualString(t, unnoticedAlertAtT0Plus(4*time.Hour), `{
+	assert.Equal(t, unnoticedAlertAtT0Plus(0*time.Hour), "null")
+	assert.Equal(t, unnoticedAlertAtT0Plus(1*time.Hour), "null")
+	assert.Equal(t, unnoticedAlertAtT0Plus(2*time.Hour), "null")
+	assert.Equal(t, unnoticedAlertAtT0Plus(3*time.Hour), "null")
+	assert.Equal(t, unnoticedAlertAtT0Plus(4*time.Hour), `{
   "alert_key": "",
   "subject": "Un-acked alerts",
   "details": "There are 1 un-acked alert(s):\n\nThe building is on fire https://alertmanager.com/api/alerts/acknowledge?id=a14308bba82f\n\nGo take care of them!",
   "timestamp": "2019-09-07T16:00:00Z"
 }`)
-	assert.EqualString(t, unnoticedAlertAtT0Plus(4*time.Hour+30*time.Minute), "null")
-	assert.EqualString(t, unnoticedAlertAtT0Plus(5*time.Hour), `{
+	assert.Equal(t, unnoticedAlertAtT0Plus(4*time.Hour+30*time.Minute), "null")
+	assert.Equal(t, unnoticedAlertAtT0Plus(5*time.Hour), `{
   "alert_key": "",
   "subject": "Un-acked alerts",
   "details": "There are 1 un-acked alert(s):\n\nThe building is on fire https://alertmanager.com/api/alerts/acknowledge?id=a14308bba82f\n\nGo take care of them!",
   "timestamp": "2019-09-07T17:00:00Z"
 }`)
-	assert.EqualString(t, unnoticedAlertAtT0Plus(5*time.Hour+30*time.Minute), "null")
-	assert.EqualString(t, unnoticedAlertAtT0Plus(6*time.Hour), `{
+	assert.Equal(t, unnoticedAlertAtT0Plus(5*time.Hour+30*time.Minute), "null")
+	assert.Equal(t, unnoticedAlertAtT0Plus(6*time.Hour), `{
   "alert_key": "",
   "subject": "Un-acked alerts",
   "details": "There are 1 un-acked alert(s):\n\nThe building is on fire https://alertmanager.com/api/alerts/acknowledge?id=a14308bba82f\n\nGo take care of them!",
@@ -138,9 +137,8 @@ func TestParseTtlSpec(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc := tc // pin
 		t.Run(tc.input, func(t *testing.T) {
-			ttl, err := parseTtlSpec(tc.input, t0)
+			ttl, err := parseTTLSpec(tc.input, t0)
 			var actual string
 			if err != nil {
 				actual = fmt.Sprintf("error: %v", err)
@@ -148,7 +146,7 @@ func TestParseTtlSpec(t *testing.T) {
 				actual = ttl.Format(time.RFC3339Nano)
 			}
 
-			assert.EqualString(t, actual, tc.output)
+			assert.Equal(t, actual, tc.output)
 		})
 	}
 }

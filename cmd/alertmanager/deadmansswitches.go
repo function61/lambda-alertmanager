@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/function61/eventhorizon/pkg/ehevent"
-	"github.com/function61/gokit/ossignal"
 	"github.com/function61/lambda-alertmanager/pkg/amdomain"
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
 	"github.com/scylladb/termtables"
@@ -25,10 +24,8 @@ func deadMansSwitchEntry() *cobra.Command {
 		Use:   "ls",
 		Short: "List dead man´s switches",
 		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
-			exitIfError(deadmansswitchList(
-				ossignal.InterruptOrTerminateBackgroundCtx(nil),
-				expired))
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return deadmansswitchList(cmd.Context(), expired)
 		},
 	}
 
@@ -40,10 +37,8 @@ func deadMansSwitchEntry() *cobra.Command {
 		Use:   "rm [id]",
 		Short: "Remove a switch",
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			exitIfError(deadmansswitchRemove(
-				ossignal.InterruptOrTerminateBackgroundCtx(nil),
-				args[0]))
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return deadmansswitchRemove(cmd.Context(), args[0])
 		},
 	})
 
@@ -51,22 +46,24 @@ func deadMansSwitchEntry() *cobra.Command {
 		Use:   "checkin [subject] [ttl]",
 		Short: "Make a checkin",
 		Args:  cobra.ExactArgs(2),
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx := ossignal.InterruptOrTerminateBackgroundCtx(nil)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ttl, err := parseTTLSpec(args[1], time.Now())
+			if err != nil {
+				return err
+			}
 
-			ttl, err := parseTtlSpec(args[1], time.Now())
-			exitIfError(err)
-
-			app, err := getApp(ctx)
-			exitIfError(err)
+			app, err := getApp(cmd.Context())
+			if err != nil {
+				return err
+			}
 
 			_, err = deadmansswitchCheckin(
-				ctx,
+				cmd.Context(),
 				args[0],
 				ttl,
 				app,
 				time.Now())
-			exitIfError(err)
+			return err
 		},
 	})
 
@@ -88,7 +85,7 @@ func deadmansswitchList(ctx context.Context, expired bool) error {
 	view.AddHeaders("Subject", "TTL")
 
 	for _, dms := range dmss {
-		view.AddRow(dms.Subject, dms.Ttl.Format(time.RFC3339))
+		view.AddRow(dms.Subject, dms.TTL.Format(time.RFC3339))
 	}
 
 	fmt.Println(view.Render())
@@ -142,7 +139,7 @@ func deadmansswitchCheckin(
 
 		if alert := amstate.FindAlertWithSubject(subject, app.State.ActiveAlerts()); alert != nil {
 			events = append(events, amdomain.NewAlertAcknowledged(
-				alert.Id,
+				alert.ID,
 				ehevent.MetaSystemUser(now)))
 
 			alertAcked = true

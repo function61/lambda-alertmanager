@@ -3,7 +3,7 @@ package amstate
 import (
 	"time"
 
-	"github.com/function61/gokit/cryptorandombytes"
+	"github.com/function61/gokit/crypto/cryptoutil"
 )
 
 func FindAlertWithSubject(subject string, alerts []Alert) *Alert {
@@ -16,9 +16,9 @@ func FindAlertWithSubject(subject string, alerts []Alert) *Alert {
 	return nil
 }
 
-func HasAlertWithId(id string, alerts []Alert) bool {
+func HasAlertWithID(id string, alerts []Alert) bool {
 	for _, alert := range alerts {
-		if alert.Id == id {
+		if alert.ID == id {
 			return true
 		}
 	}
@@ -38,9 +38,9 @@ func GetUnnoticedAlerts(alerts []Alert, now time.Time) []Alert {
 	return unnoticed
 }
 
-func FindHttpMonitorWithId(id string, monitors []HttpMonitor) *HttpMonitor {
+func FindHTTPMonitorWithID(id string, monitors []HTTPMonitor) *HTTPMonitor {
 	for _, monitor := range monitors {
-		if monitor.Id == id {
+		if monitor.ID == id {
 			return &monitor
 		}
 	}
@@ -48,8 +48,8 @@ func FindHttpMonitorWithId(id string, monitors []HttpMonitor) *HttpMonitor {
 	return nil
 }
 
-func EnabledHttpMonitors(monitors []HttpMonitor) []HttpMonitor {
-	enabled := []HttpMonitor{}
+func EnabledHTTPMonitors(monitors []HTTPMonitor) []HTTPMonitor {
+	enabled := []HTTPMonitor{}
 
 	for _, monitor := range monitors {
 		if monitor.Enabled {
@@ -73,7 +73,7 @@ func FindDeadMansSwitchWithSubject(subject string, dmss []DeadMansSwitch) *DeadM
 func GetExpiredDeadMansSwitches(switches []DeadMansSwitch, now time.Time) []DeadMansSwitch {
 	expired := []DeadMansSwitch{}
 	for _, sw := range switches {
-		if !now.Before(sw.Ttl) {
+		if !now.Before(sw.TTL) {
 			expired = append(expired, sw)
 		}
 	}
@@ -81,10 +81,10 @@ func GetExpiredDeadMansSwitches(switches []DeadMansSwitch, now time.Time) []Dead
 	return expired
 }
 
-func NewAlertId() string {
-	return cryptorandombytes.Base64UrlWithoutLeadingDash(6)
+func NewAlertID() string {
+	return cryptoutil.RandBase64UrlWithoutLeadingDash(6)
 }
 
-func NewHttpMonitorId() string {
-	return cryptorandombytes.Base64UrlWithoutLeadingDash(6)
+func NewHTTPMonitorID() string {
+	return cryptoutil.RandBase64UrlWithoutLeadingDash(6)
 }

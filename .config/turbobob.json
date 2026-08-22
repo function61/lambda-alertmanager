@@ -1,0 +1,21 @@
+{
+	"for_description_of_this_file_see": "https://github.com/function61/turbobob",
+	"version_major": 1,
+	"project_name": "lambda-alertmanager",
+	"builders": [
+		{
+			"name": "default",
+			"uses": "docker://fn61/buildkit-golang:20260604_1344_ff654e98",
+			"mount_source": "",
+			"mount_destination": "/workspace",
+			"workdir": "/workspace",
+			"commands": {
+				"build": ["build-go-project.sh", "--directory=cmd/alertmanager/", "--binary-basename=alertmanager", "--aws-lambda-zip"],
+				"dev": ["bash"]
+			}
+		}
+	],
+	"os_arches": {
+		"linux-amd64": true
+	}
+}

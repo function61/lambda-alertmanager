@@ -6,8 +6,7 @@ import (
 	"time"
 
 	"github.com/function61/eventhorizon/pkg/ehevent"
-	"github.com/function61/gokit/ossignal"
-	"github.com/function61/gokit/stringutils"
+	"github.com/function61/gokit/strings/stringutils"
 	"github.com/function61/lambda-alertmanager/pkg/amdomain"
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
 	"github.com/scylladb/termtables"
@@ -24,9 +23,8 @@ func httpMonitorEntry() *cobra.Command {
 		Use:   "ls",
 		Short: "List monitors",
 		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
-			exitIfError(httpMonitorList(
-				ossignal.InterruptOrTerminateBackgroundCtx(nil)))
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return httpMonitorList(cmd.Context())
 		},
 	})
 
@@ -34,10 +32,8 @@ func httpMonitorEntry() *cobra.Command {
 		Use:   "rm [id]",
 		Short: "Remove HTTP monitor",
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			exitIfError(httpMonitorDelete(
-				ossignal.InterruptOrTerminateBackgroundCtx(nil),
-				args[0]))
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return httpMonitorDelete(cmd.Context(), args[0])
 		},
 	})
 
@@ -45,11 +41,11 @@ func httpMonitorEntry() *cobra.Command {
 		Use:   "enable [id]",
 		Short: "Enable disabled HTTP monitor",
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			exitIfError(httpMonitorEnableOrDisable(
-				ossignal.InterruptOrTerminateBackgroundCtx(nil),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return httpMonitorEnableOrDisable(
+				cmd.Context(),
 				args[0],
-				true))
+				true)
 		},
 	})
 
@@ -57,11 +53,11 @@ func httpMonitorEntry() *cobra.Command {
 		Use:   "disable [id]",
 		Short: "Temporarily disable a HTTP monitor",
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			exitIfError(httpMonitorEnableOrDisable(
-				ossignal.InterruptOrTerminateBackgroundCtx(nil),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return httpMonitorEnableOrDisable(
+				cmd.Context(),
 				args[0],
-				false))
+				false)
 		},
 	})
 
@@ -69,11 +65,11 @@ func httpMonitorEntry() *cobra.Command {
 		Use:   "mk [url] [find]",
 		Short: "Create HTTP monitor",
 		Args:  cobra.ExactArgs(2),
-		Run: func(cmd *cobra.Command, args []string) {
-			exitIfError(httpMonitorCreate(
-				ossignal.InterruptOrTerminateBackgroundCtx(nil),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return httpMonitorCreate(
+				cmd.Context(),
 				args[0],
-				args[1]))
+				args[1])
 		},
 	})
 
@@ -81,13 +77,13 @@ func httpMonitorEntry() *cobra.Command {
 		Use:   "scan",
 		Short: "Runs all enabled monitors and raises alerts if appropriate",
 		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx := ossignal.InterruptOrTerminateBackgroundCtx(nil)
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			app, err := getApp(cmd.Context())
+			if err != nil {
+				return err
+			}
 
-			app, err := getApp(ctx)
-			exitIfError(err)
-
-			exitIfError(httpMonitorScanAndAlertFailures(ctx, app))
+			return httpMonitorScanAndAlertFailures(cmd.Context(), app)
 		},
 	})
 
@@ -103,11 +99,11 @@ func httpMonitorList(ctx context.Context) error {
 	view := termtables.CreateTable()
 	view.AddHeaders("Id", "Enabled", "Url", "Find")
 
-	for _, alert := range app.State.HttpMonitors() {
+	for _, alert := range app.State.HTTPMonitors() {
 		view.AddRow(
-			alert.Id,
+			alert.ID,
 			boolToCheckmark(alert.Enabled),
-			stringutils.Truncate(alert.Url, 44),
+			stringutils.Truncate(alert.URL, 44),
 			alert.Find)
 	}
 
@@ -122,8 +118,8 @@ func httpMonitorCreate(ctx context.Context, url string, find string) error {
 		return err
 	}
 
-	monitorCreated := amdomain.NewHttpMonitorCreated(
-		amstate.NewHttpMonitorId(),
+	monitorCreated := amdomain.NewHTTPMonitorCreated(
+		amstate.NewHTTPMonitorID(),
 		true,
 		url,
 		find,
@@ -144,11 +140,11 @@ func httpMonitorDelete(ctx context.Context, id string) error {
 	}
 
 	return app.Reader.TransactWrite(ctx, func() error {
-		if amstate.FindHttpMonitorWithId(id, app.State.HttpMonitors()) == nil {
+		if amstate.FindHTTPMonitorWithID(id, app.State.HTTPMonitors()) == nil {
 			return fmt.Errorf("monitor to delete not found: %s", id)
 		}
 
-		return app.AppendAfter(ctx, app.State.Version(), amdomain.NewHttpMonitorDeleted(
+		return app.AppendAfter(ctx, app.State.Version(), amdomain.NewHTTPMonitorDeleted(
 			id,
 			ehevent.MetaSystemUser(time.Now())))
 	})
@@ -161,7 +157,7 @@ func httpMonitorEnableOrDisable(ctx context.Context, id string, newState bool) e
 	}
 
 	return app.Reader.TransactWrite(ctx, func() error {
-		monitorToEdit := amstate.FindHttpMonitorWithId(id, app.State.HttpMonitors())
+		monitorToEdit := amstate.FindHTTPMonitorWithID(id, app.State.HTTPMonitors())
 		if monitorToEdit == nil {
 			return fmt.Errorf("monitor not found: %s", id)
 		}
@@ -170,7 +166,7 @@ func httpMonitorEnableOrDisable(ctx context.Context, id string, newState bool) e
 			return fmt.Errorf("monitor left unchanged: %s", id)
 		}
 
-		return app.AppendAfter(ctx, app.State.Version(), amdomain.NewHttpMonitorEnabledUpdated(
+		return app.AppendAfter(ctx, app.State.Version(), amdomain.NewHTTPMonitorEnabledUpdated(
 			id,
 			newState,
 			ehevent.MetaSystemUser(time.Now())))

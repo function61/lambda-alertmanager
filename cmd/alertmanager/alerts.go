@@ -7,8 +7,7 @@ import (
 	"time"
 
 	"github.com/function61/eventhorizon/pkg/ehevent"
-	"github.com/function61/gokit/ossignal"
-	"github.com/function61/gokit/stringutils"
+	"github.com/function61/gokit/strings/stringutils"
 	"github.com/function61/lambda-alertmanager/pkg/amdomain"
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
 	"github.com/scylladb/termtables"
@@ -25,11 +24,11 @@ func alertEntry() *cobra.Command {
 		Use:   "mk [subject] [details]",
 		Short: "Raise an alert",
 		Args:  cobra.ExactArgs(2),
-		Run: func(cmd *cobra.Command, args []string) {
-			exitIfError(alertRaise(
-				ossignal.InterruptOrTerminateBackgroundCtx(nil),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return alertRaise(
+				cmd.Context(),
 				args[0],
-				args[1]))
+				args[1])
 		},
 	})
 
@@ -37,9 +36,8 @@ func alertEntry() *cobra.Command {
 		Use:   "ls",
 		Short: "List active alerts",
 		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
-			exitIfError(alertList(
-				ossignal.InterruptOrTerminateBackgroundCtx(nil)))
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return alertList(cmd.Context())
 		},
 	})
 
@@ -47,10 +45,8 @@ func alertEntry() *cobra.Command {
 		Use:   "ack [id]",
 		Short: "Acknowledge an alert",
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			exitIfError(alertAck(
-				ossignal.InterruptOrTerminateBackgroundCtx(nil),
-				args[0]))
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return alertAck(cmd.Context(), args[0])
 		},
 	})
 
@@ -64,7 +60,7 @@ func alertRaise(ctx context.Context, subject string, details string) error {
 	}
 
 	raised := amdomain.NewAlertRaised(
-		amstate.NewAlertId(),
+		amstate.NewAlertID(),
 		subject,
 		details,
 		ehevent.MetaSystemUser(time.Now()))
@@ -89,7 +85,7 @@ func alertList(ctx context.Context) error {
 
 	for _, alert := range app.State.ActiveAlerts() {
 		view.AddRow(
-			alert.Id,
+			alert.ID,
 			alert.Timestamp.Format(time.RFC3339),
 			alert.Subject,
 			stringutils.Truncate(removeLinebreaks(alert.Details), 50))
@@ -100,19 +96,19 @@ func alertList(ctx context.Context) error {
 	return nil
 }
 
-func alertAck(ctx context.Context, alertId string) error {
+func alertAck(ctx context.Context, alertID string) error {
 	app, err := getApp(ctx)
 	if err != nil {
 		return err
 	}
 
 	acked := amdomain.NewAlertAcknowledged(
-		alertId,
+		alertID,
 		ehevent.MetaSystemUser(time.Now()))
 
 	return app.Reader.TransactWrite(ctx, func() error {
-		if !amstate.HasAlertWithId(alertId, app.State.ActiveAlerts()) {
-			return fmt.Errorf("no alert: %s", alertId)
+		if !amstate.HasAlertWithID(alertID, app.State.ActiveAlerts()) {
+			return fmt.Errorf("no alert: %s", alertID)
 		}
 
 		return app.AppendAfter(ctx, app.State.Version(), acked)

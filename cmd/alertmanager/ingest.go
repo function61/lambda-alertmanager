@@ -10,7 +10,6 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/function61/eventhorizon/pkg/ehevent"
-	"github.com/function61/gokit/logex"
 	"github.com/function61/lambda-alertmanager/pkg/amdomain"
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
 )
@@ -26,7 +25,7 @@ func handleSnsIngest(ctx context.Context, event events.SNSEvent) error {
 
 	for _, msg := range event.Records {
 		candidateAlerts = append(candidateAlerts, amstate.Alert{
-			Id:        amstate.NewAlertId(),
+			ID:        amstate.NewAlertID(),
 			Subject:   msg.SNS.Subject,
 			Details:   msg.SNS.Message,
 			Timestamp: msg.SNS.Timestamp,
@@ -61,7 +60,7 @@ func ingestAlertsAndReturnCreatedFlag(ctx context.Context, candidateAlerts []ams
 		// raise alerts for failures
 		for _, alert := range alerts {
 			alertEvents = append(alertEvents, amdomain.NewAlertRaised(
-				alert.Id,
+				alert.ID,
 				alert.Subject,
 				alert.Details,
 				ehevent.MetaSystemUser(alert.Timestamp)))
@@ -79,7 +78,7 @@ func ingestAlertsAndReturnCreatedFlag(ctx context.Context, candidateAlerts []ams
 
 		for _, alert := range alerts {
 			if err := publishAlert(alert); err != nil {
-				logex.Levels(app.Logger).Error.Printf("publishAlert: %v", err)
+				app.Logger.ErrorContext(ctx, "publish alert", "err", err)
 			}
 		}
 

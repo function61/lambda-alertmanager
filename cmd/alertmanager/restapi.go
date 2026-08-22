@@ -4,22 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"html"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/function61/gokit/httputils"
-	"github.com/function61/gokit/jsonfile"
-	"github.com/function61/gokit/logex"
-	"github.com/function61/gokit/ossignal"
-	"github.com/function61/gokit/taskrunner"
+	"github.com/function61/gokit/encoding/jsonfile"
+	"github.com/function61/gokit/net/http/httputils"
 	"github.com/function61/lambda-alertmanager/pkg/alertmanagertypes"
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
 	"github.com/spf13/cobra"
 )
 
-func newRestApi(ctx context.Context) http.Handler {
+func newRestAPI(ctx context.Context) http.Handler {
 	app, err := getApp(ctx)
 	if err != nil {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -27,21 +24,21 @@ func newRestApi(ctx context.Context) http.Handler {
 		})
 	}
 
-	mux := httputils.NewMethodMux()
+	routes := http.NewServeMux()
 
-	mux.GET.HandleFunc("/alerts", func(w http.ResponseWriter, r *http.Request) {
+	routes.HandleFunc("GET /alerts", func(w http.ResponseWriter, r *http.Request) {
 		noCacheHeaders(w)
 
-		handleJsonOutput(w, app.State.ActiveAlerts())
+		handleJSONOutput(w, app.State.ActiveAlerts())
 	})
 
-	mux.POST.HandleFunc("/alerts/ingest", func(w http.ResponseWriter, r *http.Request) {
+	routes.HandleFunc("POST /alerts/ingest", func(w http.ResponseWriter, r *http.Request) {
 		alert := amstate.Alert{}
-		if err := jsonfile.Unmarshal(r.Body, &alert, true); err != nil {
+		if err := jsonfile.UnmarshalDisallowUnknownFields(r.Body, &alert); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		alert.Id = amstate.NewAlertId() // FIXME: bad design
+		alert.ID = amstate.NewAlertID() // FIXME: bad design
 
 		created, err := ingestAlertsAndReturnCreatedFlag(r.Context(), []amstate.Alert{alert}, app)
 		if err != nil {
@@ -56,7 +53,7 @@ func newRestApi(ctx context.Context) http.Handler {
 		}
 	})
 
-	mux.GET.HandleFunc("/alerts/acknowledge", func(w http.ResponseWriter, r *http.Request) {
+	routes.HandleFunc("GET /alerts/acknowledge", func(w http.ResponseWriter, r *http.Request) {
 		id := r.URL.Query().Get("id")
 
 		noCacheHeaders(w)
@@ -66,17 +63,17 @@ func newRestApi(ctx context.Context) http.Handler {
 			return
 		}
 
-		fmt.Fprintf(w, "Ack ok for %s", id)
+		_, _ = fmt.Fprintf(w, "Ack ok for %s", html.EscapeString(id))
 	})
 
-	mux.GET.HandleFunc("/deadmansswitches", func(w http.ResponseWriter, r *http.Request) {
+	routes.HandleFunc("GET /deadmansswitches", func(w http.ResponseWriter, r *http.Request) {
 		noCacheHeaders(w)
 
-		handleJsonOutput(w, app.State.DeadMansSwitches())
+		handleJSONOutput(w, app.State.DeadMansSwitches())
 	})
 
 	// /deadmansswitch/checkin?subject=ubackup_done&ttl=24h30m
-	mux.GET.HandleFunc("/deadmansswitch/checkin", func(w http.ResponseWriter, r *http.Request) {
+	routes.HandleFunc("GET /deadmansswitch/checkin", func(w http.ResponseWriter, r *http.Request) {
 		// same semantic hack here as acknowledge endpoint
 
 		noCacheHeaders(w)
@@ -88,9 +85,9 @@ func newRestApi(ctx context.Context) http.Handler {
 		}, app)
 	})
 
-	mux.POST.HandleFunc("/deadmansswitch/checkin", func(w http.ResponseWriter, r *http.Request) {
+	routes.HandleFunc("POST /deadmansswitch/checkin", func(w http.ResponseWriter, r *http.Request) {
 		checkin := alertmanagertypes.DeadMansSwitchCheckinRequest{}
-		if err := jsonfile.Unmarshal(r.Body, &checkin, true); err != nil {
+		if err := jsonfile.UnmarshalDisallowUnknownFields(r.Body, &checkin); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -99,11 +96,11 @@ func newRestApi(ctx context.Context) http.Handler {
 		handleDeadMansSwitchCheckin(w, r, checkin, app)
 	})
 
-	mux.POST.HandleFunc("/prometheus-alertmanager/api/v1/alerts", func(w http.ResponseWriter, r *http.Request) {
+	routes.HandleFunc("POST /prometheus-alertmanager/api/v1/alerts", func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "not implemented yet", http.StatusInternalServerError)
 	})
 
-	return mux
+	return routes
 }
 
 func handleDeadMansSwitchCheckin(
@@ -119,7 +116,7 @@ func handleDeadMansSwitchCheckin(
 
 	now := time.Now()
 
-	ttl, err := parseTtlSpec(raw.TTL, now)
+	ttl, err := parseTTLSpec(raw.TTL, now)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -132,13 +129,13 @@ func handleDeadMansSwitchCheckin(
 	}
 
 	if alertAcked {
-		fmt.Fprintln(w, "Check-in noted; alert that was firing for this dead mans's switch was acked")
+		_, _ = fmt.Fprintln(w, "Check-in noted; alert that was firing for this dead mans's switch was acked")
 	} else {
-		fmt.Fprintln(w, "Check-in noted")
+		_, _ = fmt.Fprintln(w, "Check-in noted")
 	}
 }
 
-func handleJsonOutput(w http.ResponseWriter, output interface{}) {
+func handleJSONOutput(w http.ResponseWriter, output any) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(output); err != nil {
@@ -146,40 +143,30 @@ func handleJsonOutput(w http.ResponseWriter, output interface{}) {
 	}
 }
 
-func restApiCliEntry() *cobra.Command {
+func restAPICliEntry() *cobra.Command {
 	return &cobra.Command{
 		Use:   "restapi",
 		Short: "Start REST API (used mainly for dev/testing)",
 		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
-			logger := logex.StandardLogger()
-
-			exitIfError(runStandaloneRestApi(
-				ossignal.InterruptOrTerminateBackgroundCtx(logger),
-				logger))
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return runStandaloneRestAPI(cmd.Context())
 		},
 	}
 }
 
-func runStandaloneRestApi(ctx context.Context, logger *log.Logger) error {
+func runStandaloneRestAPI(ctx context.Context) error {
 	srv := &http.Server{
 		Addr:    ":80",
-		Handler: newRestApi(ctx),
+		Handler: newRestAPI(ctx),
+
+		ReadHeaderTimeout: httputils.DefaultReadHeaderTimeout,
 	}
 
-	tasks := taskrunner.New(ctx, logger)
-
-	tasks.Start("listener "+srv.Addr, func(_ context.Context, _ string) error {
-		return httputils.RemoveGracefulServerClosedError(srv.ListenAndServe())
-	})
-
-	tasks.Start("listenershutdowner", httputils.ServerShutdownTask(srv))
-
-	return tasks.Wait()
+	return httputils.CancelableServer(ctx, srv, srv.ListenAndServe)
 }
 
 func ackLink(alert amstate.Alert) string {
-	return os.Getenv("API_ENDPOINT") + "/alerts/acknowledge?id=" + alert.Id
+	return os.Getenv("API_ENDPOINT") + "/alerts/acknowledge?id=" + alert.ID
 }
 
 func noCacheHeaders(w http.ResponseWriter) {

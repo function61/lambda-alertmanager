@@ -10,7 +10,7 @@ import (
 	"github.com/function61/eventhorizon/pkg/ehevent"
 	"github.com/function61/eventhorizon/pkg/ehreader"
 	"github.com/function61/eventhorizon/pkg/ehreader/ehreadertest"
-	"github.com/function61/gokit/assert"
+	"github.com/function61/gokit/testing/assert"
 	"github.com/function61/lambda-alertmanager/pkg/amdomain"
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
 )
@@ -45,11 +45,11 @@ func TestDeadmansswitchCheckin(t *testing.T) {
 		app,
 		t0)
 	assert.Ok(t, err)
-	assert.Assert(t, !alertAcked)
+	assert.Equal(t, alertAcked, false)
 
 	dumper := newEventDumper(testStreamName, eventLog, amdomain.Types)
 
-	assert.EqualString(t, dumper.Dump(), `
+	assert.Equal(t, dumper.Dump(), `
 2019-09-07T12:00:00.000Z UnnoticedAlertsNotified    {"AlertIds":["dummyid"]}
 2019-09-07T12:00:00.000Z DeadMansSwitchCreated    {"Subject":"My test switch","Ttl":"2019-09-07T13:00:00Z"}
 2019-09-07T12:00:00.000Z DeadMansSwitchCheckin    {"Subject":"My test switch","Ttl":"2019-09-07T13:00:00Z"}`)
@@ -63,9 +63,9 @@ func TestDeadmansswitchCheckin(t *testing.T) {
 		app,
 		t0.Add(30*time.Minute))
 	assert.Ok(t, err)
-	assert.Assert(t, !alertAcked)
+	assert.Equal(t, alertAcked, false)
 
-	assert.EqualString(t, dumper.Dump(), `
+	assert.Equal(t, dumper.Dump(), `
 2019-09-07T12:00:00.000Z UnnoticedAlertsNotified    {"AlertIds":["dummyid"]}
 2019-09-07T12:00:00.000Z DeadMansSwitchCreated    {"Subject":"My test switch","Ttl":"2019-09-07T13:00:00Z"}
 2019-09-07T12:00:00.000Z DeadMansSwitchCheckin    {"Subject":"My test switch","Ttl":"2019-09-07T13:00:00Z"}

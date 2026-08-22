@@ -11,9 +11,9 @@ var Types = ehevent.Allocators{
 	"AlertRaised":               func() ehevent.Event { return &AlertRaised{} },
 	"AlertAcknowledged":         func() ehevent.Event { return &AlertAcknowledged{} },
 	"UnnoticedAlertsNotified":   func() ehevent.Event { return &UnnoticedAlertsNotified{} },
-	"HttpMonitorCreated":        func() ehevent.Event { return &HttpMonitorCreated{} },
-	"HttpMonitorEnabledUpdated": func() ehevent.Event { return &HttpMonitorEnabledUpdated{} },
-	"HttpMonitorDeleted":        func() ehevent.Event { return &HttpMonitorDeleted{} },
+	"HttpMonitorCreated":        func() ehevent.Event { return &HTTPMonitorCreated{} },
+	"HttpMonitorEnabledUpdated": func() ehevent.Event { return &HTTPMonitorEnabledUpdated{} },
+	"HttpMonitorDeleted":        func() ehevent.Event { return &HTTPMonitorDeleted{} },
 	"DeadMansSwitchCreated":     func() ehevent.Event { return &DeadMansSwitchCreated{} },
 	"DeadMansSwitchCheckin":     func() ehevent.Event { return &DeadMansSwitchCheckin{} },
 	"DeadMansSwitchDeleted":     func() ehevent.Event { return &DeadMansSwitchDeleted{} },
@@ -23,7 +23,7 @@ var Types = ehevent.Allocators{
 
 type AlertRaised struct {
 	meta    ehevent.EventMeta
-	Id      string
+	ID      string `json:"Id"`
 	Subject string
 	Details string
 }
@@ -39,7 +39,7 @@ func NewAlertRaised(
 ) *AlertRaised {
 	return &AlertRaised{
 		meta:    meta,
-		Id:      id,
+		ID:      id,
 		Subject: subject,
 		Details: details,
 	}
@@ -49,7 +49,7 @@ func NewAlertRaised(
 
 type AlertAcknowledged struct {
 	meta ehevent.EventMeta
-	Id   string
+	ID   string `json:"Id"`
 }
 
 func (e *AlertAcknowledged) MetaType() string         { return "AlertAcknowledged" }
@@ -61,7 +61,7 @@ func NewAlertAcknowledged(
 ) *AlertAcknowledged {
 	return &AlertAcknowledged{
 		meta: meta,
-		Id:   id,
+		ID:   id,
 	}
 }
 
@@ -69,7 +69,7 @@ func NewAlertAcknowledged(
 
 type UnnoticedAlertsNotified struct {
 	meta     ehevent.EventMeta
-	AlertIds []string
+	AlertIDs []string `json:"AlertIds"`
 }
 
 func (e *UnnoticedAlertsNotified) MetaType() string         { return "UnnoticedAlertsNotified" }
@@ -81,79 +81,79 @@ func NewUnnoticedAlertsNotified(
 ) *UnnoticedAlertsNotified {
 	return &UnnoticedAlertsNotified{
 		meta:     meta,
-		AlertIds: alertIds,
+		AlertIDs: alertIds,
 	}
 }
 
 // ------
 
-type HttpMonitorCreated struct {
+type HTTPMonitorCreated struct {
 	meta    ehevent.EventMeta
-	Id      string
+	ID      string `json:"Id"`
 	Enabled bool
-	Url     string
+	URL     string `json:"Url"`
 	Find    string
 }
 
-func (e *HttpMonitorCreated) MetaType() string         { return "HttpMonitorCreated" }
-func (e *HttpMonitorCreated) Meta() *ehevent.EventMeta { return &e.meta }
+func (e *HTTPMonitorCreated) MetaType() string         { return "HttpMonitorCreated" }
+func (e *HTTPMonitorCreated) Meta() *ehevent.EventMeta { return &e.meta }
 
-func NewHttpMonitorCreated(
+func NewHTTPMonitorCreated(
 	id string,
 	enabled bool,
 	url string,
 	find string,
 	meta ehevent.EventMeta,
-) *HttpMonitorCreated {
-	return &HttpMonitorCreated{
+) *HTTPMonitorCreated {
+	return &HTTPMonitorCreated{
 		meta:    meta,
-		Id:      id,
+		ID:      id,
 		Enabled: enabled,
-		Url:     url,
+		URL:     url,
 		Find:    find,
 	}
 }
 
 // ------
 
-type HttpMonitorEnabledUpdated struct {
+type HTTPMonitorEnabledUpdated struct {
 	meta    ehevent.EventMeta
-	Id      string
+	ID      string `json:"Id"`
 	Enabled bool
 }
 
-func (e *HttpMonitorEnabledUpdated) MetaType() string         { return "HttpMonitorEnabledUpdated" }
-func (e *HttpMonitorEnabledUpdated) Meta() *ehevent.EventMeta { return &e.meta }
+func (e *HTTPMonitorEnabledUpdated) MetaType() string         { return "HttpMonitorEnabledUpdated" }
+func (e *HTTPMonitorEnabledUpdated) Meta() *ehevent.EventMeta { return &e.meta }
 
-func NewHttpMonitorEnabledUpdated(
+func NewHTTPMonitorEnabledUpdated(
 	id string,
 	enabled bool,
 	meta ehevent.EventMeta,
-) *HttpMonitorEnabledUpdated {
-	return &HttpMonitorEnabledUpdated{
+) *HTTPMonitorEnabledUpdated {
+	return &HTTPMonitorEnabledUpdated{
 		meta:    meta,
-		Id:      id,
+		ID:      id,
 		Enabled: enabled,
 	}
 }
 
 // ------
 
-type HttpMonitorDeleted struct {
+type HTTPMonitorDeleted struct {
 	meta ehevent.EventMeta
-	Id   string
+	ID   string `json:"Id"`
 }
 
-func (e *HttpMonitorDeleted) MetaType() string         { return "HttpMonitorDeleted" }
-func (e *HttpMonitorDeleted) Meta() *ehevent.EventMeta { return &e.meta }
+func (e *HTTPMonitorDeleted) MetaType() string         { return "HttpMonitorDeleted" }
+func (e *HTTPMonitorDeleted) Meta() *ehevent.EventMeta { return &e.meta }
 
-func NewHttpMonitorDeleted(
+func NewHTTPMonitorDeleted(
 	id string,
 	meta ehevent.EventMeta,
-) *HttpMonitorDeleted {
-	return &HttpMonitorDeleted{
+) *HTTPMonitorDeleted {
+	return &HTTPMonitorDeleted{
 		meta: meta,
-		Id:   id,
+		ID:   id,
 	}
 }
 
@@ -162,7 +162,7 @@ func NewHttpMonitorDeleted(
 type DeadMansSwitchCreated struct {
 	meta    ehevent.EventMeta
 	Subject string
-	Ttl     time.Time
+	TTL     time.Time `json:"Ttl"`
 }
 
 func (e *DeadMansSwitchCreated) MetaType() string         { return "DeadMansSwitchCreated" }
@@ -176,7 +176,7 @@ func NewDeadMansSwitchCreated(
 	return &DeadMansSwitchCreated{
 		meta:    meta,
 		Subject: subject,
-		Ttl:     ttl,
+		TTL:     ttl,
 	}
 }
 
@@ -185,7 +185,7 @@ func NewDeadMansSwitchCreated(
 type DeadMansSwitchCheckin struct {
 	meta    ehevent.EventMeta
 	Subject string
-	Ttl     time.Time
+	TTL     time.Time `json:"Ttl"`
 }
 
 func (e *DeadMansSwitchCheckin) MetaType() string         { return "DeadMansSwitchCheckin" }
@@ -199,7 +199,7 @@ func NewDeadMansSwitchCheckin(
 	return &DeadMansSwitchCheckin{
 		meta:    meta,
 		Subject: subject,
-		Ttl:     ttl,
+		TTL:     ttl,
 	}
 }
 

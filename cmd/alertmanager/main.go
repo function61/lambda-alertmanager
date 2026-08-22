@@ -2,16 +2,13 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"os"
+	"log/slog"
 	"time"
 
 	"github.com/function61/eventhorizon/pkg/ehcli"
 	"github.com/function61/eventhorizon/pkg/ehreader"
-	"github.com/function61/gokit/aws/lambdautils"
-	"github.com/function61/gokit/dynversion"
-	"github.com/function61/gokit/logex"
-	"github.com/function61/gokit/ossignal"
+	"github.com/function61/gokit/app/aws/lambdautils"
+	"github.com/function61/gokit/app/cli"
 	"github.com/function61/lambda-alertmanager/pkg/amstate"
 	"github.com/spf13/cobra"
 )
@@ -25,9 +22,7 @@ func main() {
 	}
 
 	app := &cobra.Command{
-		Use:     os.Args[0],
-		Short:   "Alert manager",
-		Version: dynversion.Version,
+		Short: "Alert manager",
 	}
 
 	app.AddCommand(alertEntry())
@@ -38,19 +33,17 @@ func main() {
 
 	app.AddCommand(ehcli.Entrypoint())
 
-	app.AddCommand(restApiCliEntry())
+	app.AddCommand(restAPICliEntry())
 
 	app.AddCommand(&cobra.Command{
 		Use:   "lambda-scheduler",
 		Short: "Run what Lambda would invoke in response to scheduler event",
-		Run: func(*cobra.Command, []string) {
-			exitIfError(handleCloudwatchScheduledEvent(
-				ossignal.InterruptOrTerminateBackgroundCtx(nil),
-				time.Now()))
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return handleCloudwatchScheduledEvent(cmd.Context(), time.Now())
 		},
 	})
 
-	exitIfError(app.Execute())
+	cli.Execute(app)
 }
 
 func getApp(ctx context.Context) (*amstate.App, error) {
@@ -59,17 +52,8 @@ func getApp(ctx context.Context) (*amstate.App, error) {
 		return nil, err
 	}
 
-	logger := logex.StandardLogger()
-
 	return amstate.LoadUntilRealtime(
 		ctx,
 		tenantCtx,
-		logger)
-}
-
-func exitIfError(err error) {
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+		slog.Default())
 }

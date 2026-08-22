@@ -2,17 +2,13 @@ name: Build
 
 on: [push]
 
+permissions:
+  contents: read
+  # push container images to GHCR
+  packages: write
+
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Download Turbo Bob
-      run: curl --fail --location --output bob https://dl.bintray.com/function61/dl/turbobob/20200220_1142_9c1ea959/bob_linux-amd64 && chmod +x bob
-    - name: Build with Turbo Bob
-      run: CI_REVISION_ID="$GITHUB_SHA" ./bob build --publish-artefacts
-      # unfortunately there doesn't seem to be a way to "expose all secrets", so you must
-      # list here each secret to pass on to the build
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        EVENTHORIZON: ${{ secrets.EVENTHORIZON }}
+  reusable-build:
+    # this basically just runs `$ bob build` (for details see https://github.com/function61/turbobob)
+    uses: function61/turbobob-action/.github/workflows/build.yml@main
+

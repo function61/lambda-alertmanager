@@ -53,7 +53,7 @@ func checkAndAlertForUnnoticedAlerts(
 
 	for _, alert := range unnoticedAlerts {
 		unnoticedAlertSubjects = append(unnoticedAlertSubjects, alert.Subject+" "+ackLink(alert))
-		unnoticedAlertIds = append(unnoticedAlertIds, alert.Id)
+		unnoticedAlertIds = append(unnoticedAlertIds, alert.ID)
 	}
 
 	if len(unnoticedAlertIds) == 0 {
@@ -107,7 +107,7 @@ func alertForExpiredDeadMansSwitches(ctx context.Context, app *amstate.App, now 
 
 var plusDayAtStaticTimeRe = regexp.MustCompile(`^\+([0-9]+)d@([0-9]{2}):([0-9]{2})$`)
 
-func parseTtlSpec(spec string, now time.Time) (time.Time, error) {
+func parseTTLSpec(spec string, now time.Time) (time.Time, error) {
 	// +1d@12:00
 	if match := plusDayAtStaticTimeRe.FindStringSubmatch(spec); match != nil {
 		// below errors should never trigger because regexp guarantees they're in good format
@@ -143,9 +143,9 @@ func parseTtlSpec(spec string, now time.Time) (time.Time, error) {
 
 func deadMansSwitchToAlert(dms amstate.DeadMansSwitch, now time.Time) amstate.Alert {
 	return amstate.Alert{
-		Id:        amstate.NewAlertId(),
+		ID:        amstate.NewAlertID(),
 		Subject:   dms.Subject,
-		Details:   fmt.Sprintf("Check-in late by %s (%s)", now.Sub(dms.Ttl), dms.Ttl.Format(time.RFC3339Nano)),
+		Details:   fmt.Sprintf("Check-in late by %s (%s)", now.Sub(dms.TTL), dms.TTL.Format(time.RFC3339Nano)),
 		Timestamp: now,
 	}
 }
